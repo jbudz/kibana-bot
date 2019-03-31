@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "outDir": "lib",
+    "declaration": true,
+    "strict": true,
+    "allowJs": false,
+    "moduleResolution": "node",
+    "lib": [
+      "es2017"
+    ],
+    "module": "commonjs",
+    "target": "es2017"
+  },
+  "include": [
+    "index.ts"
+  ]
+}
