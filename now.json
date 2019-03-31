@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "alias": ["pr-bot.kibana.dev"],
+  "env": {
+    "GITHUB_TOKEN": "@kibana_pr_bot_github_token",
+    "WEBHOOK_SECRET": "@kibana_pr_bot_webhook_secret",
+    "ZAPIER_PW": "@kibana_pr_bot_zapier_pw"
+  },
+  "builds": [{ "src": "index.ts", "use": "@now/node" }],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "index.ts"
+    }
+  ]
+}
