@@ -4,7 +4,8 @@
   "env": {
     "GITHUB_TOKEN": "@kibana_pr_bot_github_token",
     "WEBHOOK_SECRET": "@kibana_pr_bot_webhook_secret",
-    "ZAPIER_PW": "@kibana_pr_bot_zapier_pw"
+    "ZAPIER_PW": "@kibana_pr_bot_zapier_pw",
+    "SLACK_WEBHOOK_URL": "@kibana_pr_bot_slack_webhook_url"
   },
   "builds": [{ "src": "index.ts", "use": "@now/node" }],
   "routes": [
