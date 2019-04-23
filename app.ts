@@ -1,5 +1,19 @@
-import { createMicroHandler, Route } from '@spalger/micro-plus'
+import * as Crypto from 'crypto'
+
+import {
+  createMicroHandler,
+  Route,
+  getConfigVar,
+  UnauthorizedError,
+} from '@spalger/micro-plus'
 import * as apm from 'elastic-apm-node'
+
+const WEBHOOK_SECRET = getConfigVar('GITHUB_WEBHOOK_SECRET')
+
+const getHmac = (string: string) =>
+  Crypto.createHmac('sha1', WEBHOOK_SECRET)
+    .update(string)
+    .digest('hex')
 
 module.exports = createMicroHandler({
   routes: [
@@ -10,8 +24,17 @@ module.exports = createMicroHandler({
       },
     })),
     new Route('POST', '/webhook', async ctx => {
-      const body = await ctx.readBodyAsJson()
-      console.log('webhook body', body)
+      const body = await ctx.readBodyAsText()
+
+      const signature = ctx.header('X-Hub-Signature')
+      const expectedSignature = `sha1=${getHmac(body)}`
+      if (expectedSignature !== signature) {
+        console.log('INVALID WEBHOOK SIGNATURE %j', {
+          signature,
+          expectedSignature,
+        })
+        throw new UnauthorizedError('invalid webhook signature')
+      }
 
       return {
         status: 200,

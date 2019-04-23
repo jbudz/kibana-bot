@@ -3,7 +3,7 @@
   "private": true,
   "license": "Apache 2.0",
   "dependencies": {
-    "@spalger/micro-plus": "^0.0.5",
+    "@spalger/micro-plus": "^0.0.9",
     "@types/micro": "^7.3.3",
     "@types/node": "11",
     "@typescript-eslint/eslint-plugin": "^1.5.0",
