@@ -1,5 +1,7 @@
 require('dotenv/config')
 
+console.log('APM_SERVER_URL', process.env.APM_SERVER_URL)
+
 require('elastic-apm-node').start({
   // Override service name from package.json
   // Allowed characters: a-z, A-Z, 0-9, -, _,
