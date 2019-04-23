@@ -7,22 +7,31 @@ module.exports = createMicroHandler({
       status: 200,
       body: {
         hello: 'world',
+      },
+    })),
+    new Route('POST', '/webhook', async ctx => {
+      const body = await ctx.readBodyAsJson()
+      console.log('webhook body', body)
+
+      return {
+        status: 200,
+        body: {
+          hello: 'world',
+        },
       }
-    }))
+    }),
   ],
   apmAgent: {
-    onRequest(request, response) {
-    },
-    onRequestParsed(ctx, req, resp) {
+    onRequest() {},
+    onRequestParsed(ctx) {
       apm.startTransaction(`${ctx.method} ${ctx.pathname}`)
     },
-    onResponse(resp, ctx, req, response) {
-    },
-    onError(error, ctx, request, response) {
+    onResponse() {},
+    onError(error) {
       apm.captureError(error)
     },
-    beforeSend(req, response) {
+    beforeSend(_, response) {
       apm.endTransaction(response.statusCode)
-    }
-  }
+    },
+  },
 })
