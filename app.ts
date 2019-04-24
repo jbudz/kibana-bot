@@ -5,10 +5,12 @@ import {
   Route,
   getConfigVar,
   UnauthorizedError,
+  ServerError,
 } from '@spalger/micro-plus'
 import * as apm from 'elastic-apm-node'
 
 const WEBHOOK_SECRET = getConfigVar('GITHUB_WEBHOOK_SECRET')
+const BRANCH_REF_TAG = 'refs/heads/'
 
 const getHmac = (string: string) =>
   Crypto.createHmac('sha1', WEBHOOK_SECRET)
@@ -23,6 +25,7 @@ module.exports = createMicroHandler({
         hello: 'world',
       },
     })),
+
     new Route('POST', '/webhook', async ctx => {
       const body = await ctx.readBodyAsText()
 
@@ -36,11 +39,47 @@ module.exports = createMicroHandler({
         throw new UnauthorizedError('invalid webhook signature')
       }
 
-      return {
-        status: 200,
-        body: {
-          hello: 'world',
-        },
+      const event = ctx.header('X-GitHub-Event')
+      const webhook = JSON.parse(body)
+
+      switch (event) {
+        case 'push':
+          const { ref } = webhook
+          if (!ref.startsWith(BRANCH_REF_TAG)) {
+            return {
+              body: {
+                ignored: true,
+                reason: 'not a branch?',
+              },
+            }
+          }
+
+          const branch = ref.replace(BRANCH_REF_TAG, '')
+          return {
+            body: {
+              branch,
+            },
+          }
+
+        case 'pull_request':
+          const { pull_request: pr } = webhook
+          return {
+            body: {
+              number: pr.number,
+              state: pr.state,
+            },
+          }
+
+        case 'ping':
+          return {
+            statusCode: 200,
+            body: {
+              ignored: true,
+            },
+          }
+
+        default:
+          throw new ServerError(`unhandled event [${event}]`)
       }
     }),
   ],
