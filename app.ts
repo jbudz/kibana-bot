@@ -1,9 +1,14 @@
-import { createMicroHandler, Route } from '@spalger/micro-plus'
-import * as apm from 'elastic-apm-node'
+import { createMicroHandler, Route, getConfigVar } from '@spalger/micro-plus'
+import apm from 'elastic-apm-node'
 
-import { webhookRoute } from './webhook'
+import { makeWebhookRoute, Repo } from './webhook'
 
-module.exports = createMicroHandler({
+export const repo = new Repo(getConfigVar('CLONE_DIR'))
+
+export const microHandler = createMicroHandler({
+  async onRequest() {
+    await repo.init()
+  },
   routes: [
     new Route('GET', '/', async () => ({
       status: 200,
@@ -11,7 +16,7 @@ module.exports = createMicroHandler({
         hello: 'world',
       },
     })),
-    webhookRoute,
+    makeWebhookRoute(repo),
   ],
   apmAgent: {
     onRequest() {},

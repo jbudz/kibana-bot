@@ -9,9 +9,10 @@
       "es2017"
     ],
     "module": "commonjs",
-    "target": "es2017"
+    "target": "es2017",
+    "esModuleInterop": true
   },
   "include": [
-    "index.ts"
+    "app.ts"
   ]
 }
