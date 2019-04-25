@@ -2,7 +2,6 @@
 
 require('dotenv/config')
 require('elastic-apm-node').start()
-require('ts-node/register')
 
 const { app } = require('./app')
 
