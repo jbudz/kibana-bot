@@ -31,7 +31,7 @@ interface ApiCommit {
   }
 }
 
-const isAxiosErrorResp = (error: any): error is AxiosErrorResp =>
+export const isAxiosErrorResp = (error: any): error is AxiosErrorResp =>
   error && error.request && error.response
 
 const getCommitDate = (commit: ApiCommit) => {
@@ -58,47 +58,34 @@ export class GithubApi {
     const baseComponent = encodeURIComponent(baseRef)
     const url = `/repos/elastic/kibana/compare/${headComponent}...${baseComponent}`
 
-    try {
-      const resp = await this.ax.get(url)
+    const resp = await this.ax.get(url)
 
-      const {
-        ahead_by: missingCommits,
-        commits: [oldestMissingCommit],
-      } = resp.data
+    const {
+      ahead_by: missingCommits,
+      commits: [oldestMissingCommit],
+    } = resp.data
 
-      if (missingCommits > 0 && !oldestMissingCommit) {
-        console.log(
-          'UNEXPECTED GITHUB RESPONSE: expected oldest missing commit\n  missingCommits: %d\n resp: %j',
-          missingCommits,
-          resp.data,
-        )
+    if (missingCommits > 0 && !oldestMissingCommit) {
+      console.log(
+        'UNEXPECTED GITHUB RESPONSE: expected oldest missing commit\n  missingCommits: %d\n resp: %j',
+        missingCommits,
+        resp.data,
+      )
 
-        throw new Error('Unexpected github response')
-      }
+      throw new Error('Unexpected github response')
+    }
 
-      if (!oldestMissingCommit) {
-        return {
-          missingCommits,
-        }
-      }
-
-      const oldestMissingCommitDate = getCommitDate(oldestMissingCommit.commit)
-
+    if (!oldestMissingCommit) {
       return {
         missingCommits,
-        oldestMissingCommitDate,
       }
-    } catch (error) {
-      if (isAxiosErrorResp(error)) {
-        console.log(
-          'GITHUB API ERROR RESPONSE:\n  url: %s\n  status: %s\n  data: %j',
-          url,
-          `${error.response.status} - ${error.response.statusText}`,
-          error.response.data,
-        )
-      }
+    }
 
-      throw error
+    const oldestMissingCommitDate = getCommitDate(oldestMissingCommit.commit)
+
+    return {
+      missingCommits,
+      oldestMissingCommitDate,
     }
   }
 
