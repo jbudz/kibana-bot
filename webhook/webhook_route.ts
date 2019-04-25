@@ -71,7 +71,7 @@ export function makeWebhookRoute(githubApi: GithubApi) {
         }
 
       case 'pull_request':
-        const { number, action, pull_request: pr } = webhook
+        const { action, pull_request: pr } = webhook
 
         if (!RELEVANT_PR_ACTIONS.includes(action)) {
           return {
@@ -100,7 +100,7 @@ export function makeWebhookRoute(githubApi: GithubApi) {
 
         return {
           body: {
-            number,
+            number: pr.number,
             state: pr.state,
             latestCommitDate,
             timeBehindHuman,
