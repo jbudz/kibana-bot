@@ -69,7 +69,11 @@ export function makeWebhookRoute(repo: Repo) {
         }
 
       case 'pull_request':
-        const { pull_request: pr } = webhook
+        const { number: number, pull_request: pr } = webhook
+
+        await repo.fetchPr(number)
+        await repo.fetchBranch(pr.base.ref)
+
         return {
           body: {
             number: pr.number,

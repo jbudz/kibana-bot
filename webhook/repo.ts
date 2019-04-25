@@ -72,4 +72,12 @@ export class Repo {
       })
     })
   }
+
+  public async fetchPr(prNumber: number) {
+    return await this.run(async () => {
+      await execa('git', ['fetch', 'origin', `pull/${prNumber}/head`], {
+        cwd: this.path,
+      })
+    })
+  }
 }
