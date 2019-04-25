@@ -1,40 +1,17 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
+import parseLinkHeader from 'parse-link-header'
+
+import { GithubApiPr, GithubApiCommit } from './github_api_types'
 
 interface AxiosErrorResp extends AxiosError {
   request: any
   response: AxiosResponse
 }
 
-interface ApiCommit {
-  author: {
-    name: string
-    email: string
-    date: string
-  }
-  committer: {
-    name: string
-    email: string
-    date: string
-  }
-  message: string
-  tree: {
-    sha: string
-    url: string
-  }
-  url: string
-  comment_count: number
-  verification?: {
-    verified: boolean
-    reason: string
-    signature: string
-    payload: string
-  }
-}
-
 export const isAxiosErrorResp = (error: any): error is AxiosErrorResp =>
   error && error.request && error.response
 
-const getCommitDate = (commit: ApiCommit) => {
+const getCommitDate = (commit: GithubApiCommit) => {
   const committerDate = new Date(commit.committer.date)
   const authorDate = new Date(commit.author.date)
   return committerDate > authorDate ? committerDate : authorDate
@@ -49,6 +26,7 @@ export class GithubApi {
       headers: {
         'User-Agent': 'spalger/kibana-pr-bot',
         Authorization: `token ${secret}`,
+        Accept: 'application/vnd.github.shadow-cat-preview',
       },
     })
   }
@@ -95,5 +73,47 @@ export class GithubApi {
       `/repos/elastic/kibana/commits/${refComponent}`,
     )
     return getCommitDate(resp.data.commit)
+  }
+
+  public async *ittrAllOpenPrs() {
+    const urls: (string | null)[] = [null]
+
+    const fetchInitialPage = async () => {
+      console.log('fetching initial page of PRs')
+      return await this.ax.get<GithubApiPr[]>('/repos/elastic/kibana/pulls', {
+        params: {
+          state: 'open',
+        },
+      })
+    }
+
+    const fetchNextPage = async (url: string) => {
+      console.log('fetching page of PRs', url)
+      return await this.ax.get<GithubApiPr[]>(url)
+    }
+
+    while (urls.length) {
+      const url = urls.shift()!
+      const page = await (url !== null
+        ? fetchNextPage(url)
+        : fetchInitialPage())
+
+      for (const pr of page.data) {
+        yield pr
+      }
+
+      if (!page.headers['link']) {
+        throw new Error('missing link header')
+      }
+
+      const links = parseLinkHeader(page.headers['link'])
+      if (!links) {
+        throw new Error('unable to parse link header')
+      }
+
+      if (links.next) {
+        urls.push(links.next.url)
+      }
+    }
   }
 }
