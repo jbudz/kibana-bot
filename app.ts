@@ -1,4 +1,9 @@
-import { createMicroHandler, Route, getConfigVar } from '@spalger/micro-plus'
+import {
+  createMicroHandler,
+  Route,
+  getConfigVar,
+  NotFoundError,
+} from '@spalger/micro-plus'
 import apm from 'elastic-apm-node'
 
 import { makeWebhookRoute, Repo } from './webhook'
@@ -25,6 +30,10 @@ export const microHandler = createMicroHandler({
     },
     onResponse() {},
     onError(error) {
+      if (error instanceof NotFoundError) {
+        return
+      }
+
       apm.captureError(error)
     },
     beforeSend(_, response) {
