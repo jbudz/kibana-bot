@@ -4,9 +4,9 @@ require('dotenv/config')
 require('elastic-apm-node').start()
 require('ts-node/register')
 
-const { repo, microHandler } = require('./app')
+const { app } = require('./app')
 
-require('micro')(microHandler)
+require('micro')(app())
   .listen(8000, () => {
     console.log('listening on port 8000')
   })
@@ -14,8 +14,3 @@ require('micro')(microHandler)
     console.error(error.stack || error.message || error)
     process.exit(1)
   })
-
-repo.init().catch(error => {
-  console.error(error.stack || error.message || error)
-  process.exit(1)
-})

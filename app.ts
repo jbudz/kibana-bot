@@ -1,43 +1,42 @@
 import {
   createMicroHandler,
   Route,
-  getConfigVar,
   NotFoundError,
+  getConfigVar,
 } from '@spalger/micro-plus'
 import apm from 'elastic-apm-node'
 
-import { makeWebhookRoute, Repo } from './webhook'
+import { makeWebhookRoute, GithubApi } from './webhook'
 
-export const repo = new Repo(getConfigVar('CLONE_DIR'))
+export function app() {
+  const githubApi = new GithubApi(getConfigVar('GITHUB_SECRET'))
 
-export const microHandler = createMicroHandler({
-  async onRequest() {
-    await repo.init()
-  },
-  routes: [
-    new Route('GET', '/', async () => ({
-      status: 200,
-      body: {
-        hello: 'world',
+  return createMicroHandler({
+    routes: [
+      new Route('GET', '/', async () => ({
+        status: 200,
+        body: {
+          hello: 'world',
+        },
+      })),
+      makeWebhookRoute(githubApi),
+    ],
+    apmAgent: {
+      onRequest() {},
+      onRequestParsed(ctx) {
+        apm.startTransaction(`${ctx.method} ${ctx.pathname}`)
       },
-    })),
-    makeWebhookRoute(repo),
-  ],
-  apmAgent: {
-    onRequest() {},
-    onRequestParsed(ctx) {
-      apm.startTransaction(`${ctx.method} ${ctx.pathname}`)
-    },
-    onResponse() {},
-    onError(error) {
-      if (error instanceof NotFoundError) {
-        return
-      }
+      onResponse() {},
+      onError(error) {
+        if (error instanceof NotFoundError) {
+          return
+        }
 
-      apm.captureError(error)
+        apm.captureError(error)
+      },
+      beforeSend(_, response) {
+        apm.endTransaction(response.statusCode)
+      },
     },
-    beforeSend(_, response) {
-      apm.endTransaction(response.statusCode)
-    },
-  },
-})
+  })
+}

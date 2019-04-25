@@ -1,2 +1,2 @@
 export * from './webhook_route'
-export * from './repo'
+export * from './github_api'

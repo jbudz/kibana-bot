@@ -1,6 +1,7 @@
 import * as Crypto from 'crypto'
 import { Writable, pipeline } from 'stream'
 import { promisify } from 'util'
+import humaizeDuration from 'humanize-duration'
 
 import {
   Route,
@@ -9,7 +10,7 @@ import {
   ServerError,
 } from '@spalger/micro-plus'
 
-import { Repo } from './repo'
+import { GithubApi } from './github_api'
 
 const pipelineAsync = promisify(pipeline)
 const WEBHOOK_SECRET = getConfigVar('GITHUB_WEBHOOK_SECRET')
@@ -17,7 +18,7 @@ const BRANCH_REF_TAG = 'refs/heads/'
 
 const RELEVANT_PR_ACTIONS = ['opened', 'synchronize']
 
-export function makeWebhookRoute(repo: Repo) {
+export function makeWebhookRoute(githubApi: GithubApi) {
   return new Route('POST', '/webhook', async ctx => {
     let body = ''
     const hmac = Crypto.createHmac('sha1', WEBHOOK_SECRET)
@@ -63,7 +64,6 @@ export function makeWebhookRoute(repo: Repo) {
         }
 
         const branch = ref.replace(BRANCH_REF_TAG, '')
-        await repo.fetchBranch(branch)
         return {
           body: {
             branch,
@@ -82,17 +82,29 @@ export function makeWebhookRoute(repo: Repo) {
           }
         }
 
-        const [, , commonCommit] = await Promise.all([
-          repo.fetchPr(number),
-          repo.fetchBranch(pr.base.ref),
-          repo.getMergeBase(pr.head.sha, `FETCH_HEAD`),
-        ])
+        const compare = await githubApi.compare(pr.head.sha, pr.base.label)
+        let latestCommitDate: Date | void
+        let timeBehind: number | void
+        let timeBehindHuman: string | void
+
+        if (compare.oldestMissingCommitDate) {
+          latestCommitDate = await githubApi.getCommitDate(pr.base.ref)
+          timeBehind =
+            latestCommitDate.valueOf() -
+            compare.oldestMissingCommitDate.valueOf()
+          timeBehindHuman = humaizeDuration(timeBehind, {
+            units: ['d', 'h'],
+            maxDecimalPoints: 1,
+          })
+        }
 
         return {
           body: {
-            number: pr.number,
+            number,
             state: pr.state,
-            commonCommit,
+            latestCommitDate,
+            timeBehindHuman,
+            ...compare,
           },
         }
 
