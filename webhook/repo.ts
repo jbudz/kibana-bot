@@ -80,4 +80,12 @@ export class Repo {
       })
     })
   }
+
+  public async getMergeBase(ref1: string, ref2: string) {
+    return await this.run(async () =>
+      (await execa.stdout('git', ['merge-base', ref1, ref2], {
+        cwd: this.path,
+      })).trim(),
+    )
+  }
 }

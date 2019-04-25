@@ -15,6 +15,8 @@ const pipelineAsync = promisify(pipeline)
 const WEBHOOK_SECRET = getConfigVar('GITHUB_WEBHOOK_SECRET')
 const BRANCH_REF_TAG = 'refs/heads/'
 
+const RELEVANT_PR_ACTIONS = ['opened', 'synchronize']
+
 export function makeWebhookRoute(repo: Repo) {
   return new Route('POST', '/webhook', async ctx => {
     let body = ''
@@ -69,15 +71,28 @@ export function makeWebhookRoute(repo: Repo) {
         }
 
       case 'pull_request':
-        const { number: number, pull_request: pr } = webhook
+        const { number, action, pull_request: pr } = webhook
 
-        await repo.fetchPr(number)
-        await repo.fetchBranch(pr.base.ref)
+        if (!RELEVANT_PR_ACTIONS.includes(action)) {
+          return {
+            body: {
+              ignored: true,
+              reason: 'irrelevant action',
+            },
+          }
+        }
+
+        const [, , commonCommit] = await Promise.all([
+          repo.fetchPr(number),
+          repo.fetchBranch(pr.base.ref),
+          repo.getMergeBase(pr.head.sha, `FETCH_HEAD`),
+        ])
 
         return {
           body: {
             number: pr.number,
             state: pr.state,
+            commonCommit,
           },
         }
 
