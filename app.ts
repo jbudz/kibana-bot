@@ -38,6 +38,8 @@ export function app(log: Log) {
         return {
           status: 200,
           async body(response: ServerResponse) {
+            response.connection.setNoDelay(true)
+
             const prs = githubApi.ittrAllOpenPrs()
 
             while (true) {
@@ -48,7 +50,8 @@ export function app(log: Log) {
               const { value, done } = await prs.next()
 
               if (value) {
-                await checkPr(reqLog, githubApi, value)
+                const result = await checkPr(reqLog, githubApi, value)
+                response.write(JSON.stringify(result, null, 2) + '\n\n')
               }
 
               if (done) {
