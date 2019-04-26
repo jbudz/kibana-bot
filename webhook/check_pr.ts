@@ -1,5 +1,6 @@
 import humaizeDuration from 'humanize-duration'
 
+import { Log } from '../lib'
 import { GithubApi, isAxiosErrorResp } from './github_api'
 import { GithubApiPr } from './github_api_types'
 
@@ -44,8 +45,10 @@ const retryOn404 = async <T>(fn: () => T) => {
   }
 }
 
-export async function checkPr(githubApi: GithubApi, pr: GithubApiPr) {
-  console.log('checking pr #%s', pr.number)
+export async function checkPr(log: Log, githubApi: GithubApi, pr: GithubApiPr) {
+  log.info(`checking pr #${pr.number}`, {
+    prNumber: pr.number,
+  })
 
   const compare = await retryOn404(
     async () => await githubApi.compare(pr.head.sha, pr.base.label),
@@ -67,7 +70,7 @@ export async function checkPr(githubApi: GithubApi, pr: GithubApiPr) {
 
   const commitStatus = timeBehind > 48 * HOUR ? 'failure' : 'success'
 
-  return {
+  const result = {
     number: pr.number,
     state: pr.state,
     latestCommitDate,
@@ -75,4 +78,8 @@ export async function checkPr(githubApi: GithubApi, pr: GithubApiPr) {
     commitStatus,
     ...compare,
   }
+
+  log.info(`successfully checked pr status`, { result })
+
+  return result
 }

@@ -8,12 +8,22 @@ import {
 } from '@spalger/micro-plus'
 import apm from 'elastic-apm-node'
 
+import {
+  Log,
+  assignRootLogger,
+  getRequestLogger,
+  initStartTime,
+  getStartTime,
+} from './lib'
 import { makeWebhookRoute, GithubApi, checkPr } from './webhook'
 
-export function app() {
-  const githubApi = new GithubApi(getConfigVar('GITHUB_SECRET'))
+export function app(log: Log) {
+  const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
 
   return createMicroHandler({
+    onRequest(ctx) {
+      assignRootLogger(ctx, log)
+    },
     routes: [
       new Route('GET', '/', async () => ({
         status: 200,
@@ -22,47 +32,38 @@ export function app() {
         },
       })),
       makeWebhookRoute(githubApi),
-      new Route('GET', '/refresh', async () => {
+      new Route('GET', '/refresh', async ctx => {
+        const reqLog = getRequestLogger(ctx)
+
         return {
           status: 200,
           async body(response: ServerResponse) {
-            try {
-              response.connection.setNoDelay(true)
-              const prs = githubApi.ittrAllOpenPrs()
+            const prs = githubApi.ittrAllOpenPrs()
 
-              while (true) {
-                if (!response.connection || response.connection.destroyed) {
-                  return
-                }
-
-                const { value, done } = await prs.next()
-
-                if (value) {
-                  const json = JSON.stringify(
-                    await checkPr(githubApi, value),
-                    null,
-                    2,
-                  )
-
-                  response.write(`\n\nPR #${value.number}\n${json}`)
-                }
-
-                if (done) {
-                  response.end()
-                  break
-                }
+            while (true) {
+              if (!response.connection || response.connection.destroyed) {
+                return
               }
-            } catch (error) {
-              response.end(
-                `\n\nERROR: ${error.stack || error.message || error}`,
-              )
+
+              const { value, done } = await prs.next()
+
+              if (value) {
+                await checkPr(reqLog, githubApi, value)
+              }
+
+              if (done) {
+                response.end()
+                break
+              }
             }
           },
         }
       }),
     ],
     apmAgent: {
-      onRequest() {},
+      onRequest(request) {
+        initStartTime(request)
+      },
       onRequestParsed(ctx) {
         apm.startTransaction(`${ctx.method} ${ctx.pathname}`)
       },
@@ -74,7 +75,23 @@ export function app() {
 
         apm.captureError(error)
       },
-      beforeSend(_, response) {
+      beforeSend(request, response) {
+        const endTime = Date.now()
+        const reqTime = endTime - getStartTime(request)
+
+        log.info(
+          `${request.method} ${request.url} - ${
+            response.statusCode
+          } ${reqTime}ms`,
+          {
+            type: 'request',
+            method: request.method,
+            url: request.url,
+            status: response.statusCode,
+            timeMs: reqTime,
+          },
+        )
+
         apm.endTransaction(response.statusCode)
       },
     },

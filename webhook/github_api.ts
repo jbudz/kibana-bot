@@ -1,6 +1,8 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
 import parseLinkHeader from 'parse-link-header'
+import throttle from 'lodash.throttle'
 
+import { Log } from '../lib'
 import { GithubApiPr, GithubApiCommit } from './github_api_types'
 
 interface AxiosErrorResp extends AxiosError {
@@ -19,8 +21,12 @@ const getCommitDate = (commit: GithubApiCommit) => {
 
 export class GithubApi {
   private readonly ax: AxiosInstance
+  private readonly throttledLogRateLimitInfo = throttle(
+    (a: number, b: number) => this.logRateLimitInfo(a, b),
+    10 * 1000,
+  )
 
-  public constructor(secret: string) {
+  public constructor(private log: Log, secret: string) {
     this.ax = axios.create({
       baseURL: 'https://api.github.com/',
       headers: {
@@ -36,7 +42,7 @@ export class GithubApi {
     const baseComponent = encodeURIComponent(baseRef)
     const url = `/repos/elastic/kibana/compare/${headComponent}...${baseComponent}`
 
-    const resp = await this.ax.get(url)
+    const resp = await this.get(url)
 
     const {
       ahead_by: missingCommits,
@@ -44,10 +50,12 @@ export class GithubApi {
     } = resp.data
 
     if (missingCommits > 0 && !oldestMissingCommit) {
-      console.log(
-        'UNEXPECTED GITHUB RESPONSE: expected oldest missing commit\n  missingCommits: %d\n resp: %j',
-        missingCommits,
-        resp.data,
+      this.log.error(
+        'unexpected github response, expected oldest missing commit',
+        {
+          missingCommits,
+          respBody: resp.data,
+        },
       )
 
       throw new Error('Unexpected github response')
@@ -69,9 +77,7 @@ export class GithubApi {
 
   public async getCommitDate(ref: string) {
     const refComponent = encodeURIComponent(ref)
-    const resp = await this.ax.get(
-      `/repos/elastic/kibana/commits/${refComponent}`,
-    )
+    const resp = await this.get(`/repos/elastic/kibana/commits/${refComponent}`)
     return getCommitDate(resp.data.commit)
   }
 
@@ -79,17 +85,15 @@ export class GithubApi {
     const urls: (string | null)[] = [null]
 
     const fetchInitialPage = async () => {
-      console.log('fetching initial page of PRs')
-      return await this.ax.get<GithubApiPr[]>('/repos/elastic/kibana/pulls', {
-        params: {
-          state: 'open',
-        },
+      this.log.info('fetching initial page of PRs')
+      return await this.get<GithubApiPr[]>('/repos/elastic/kibana/pulls', {
+        state: 'open',
       })
     }
 
     const fetchNextPage = async (url: string) => {
       console.log('fetching page of PRs', url)
-      return await this.ax.get<GithubApiPr[]>(url)
+      return await this.get<GithubApiPr[]>(url)
     }
 
     while (urls.length) {
@@ -115,5 +119,37 @@ export class GithubApi {
         urls.push(links.next.url)
       }
     }
+  }
+
+  private async get<Result = any>(
+    url: string,
+    params?: { [key: string]: any },
+  ): Promise<AxiosResponse<Result>> {
+    const resp = await this.ax.get(url, {
+      params,
+    })
+
+    if (
+      resp.headers &&
+      resp.headers['x-ratelimit-limit'] &&
+      resp.headers['x-ratelimit-remaining']
+    ) {
+      this.throttledLogRateLimitInfo(
+        Number.parseFloat(resp.headers['x-ratelimit-remaining']),
+        Number.parseFloat(resp.headers['x-ratelimit-limit']),
+      )
+    }
+
+    return resp
+  }
+
+  private logRateLimitInfo(remaining: number, total: number) {
+    this.log.info(`rate limit ${remaining}/${total}`, {
+      type: 'githubRateLimit',
+      rateLimit: {
+        remaining,
+        total,
+      },
+    })
   }
 }
