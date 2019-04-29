@@ -5,6 +5,7 @@ import {
   Route,
   NotFoundError,
   getConfigVar,
+  BadRequestError,
 } from '@spalger/micro-plus'
 import apm from 'elastic-apm-node'
 
@@ -14,7 +15,9 @@ import {
   getRequestLogger,
   initStartTime,
   getStartTime,
+  requireDirectApiPassword,
 } from './lib'
+
 import { makeWebhookRoute, GithubApi, checkPr } from './webhook'
 
 export function app(log: Log) {
@@ -32,36 +35,62 @@ export function app(log: Log) {
         },
       })),
       makeWebhookRoute(githubApi),
-      new Route('GET', '/refresh', async ctx => {
-        const reqLog = getRequestLogger(ctx)
+      new Route(
+        'GET',
+        '/refresh',
+        requireDirectApiPassword(async ctx => {
+          const reqLog = getRequestLogger(ctx)
 
-        return {
-          status: 200,
-          async body(response: ServerResponse) {
-            response.connection.setNoDelay(true)
+          return {
+            status: 200,
+            async body(response: ServerResponse) {
+              response.connection.setNoDelay(true)
 
-            const prs = githubApi.ittrAllOpenPrs()
+              const prs = githubApi.ittrAllOpenPrs()
 
-            while (true) {
-              if (!response.connection || response.connection.destroyed) {
-                return
+              while (true) {
+                if (!response.connection || response.connection.destroyed) {
+                  return
+                }
+
+                const { value, done } = await prs.next()
+
+                if (value) {
+                  const result = await checkPr(reqLog, githubApi, value)
+                  response.write(JSON.stringify(result, null, 2) + '\n\n')
+                }
+
+                if (done) {
+                  response.end()
+                  break
+                }
               }
+            },
+          }
+        }),
+      ),
+      new Route(
+        'GET',
+        '/check',
+        requireDirectApiPassword(async ctx => {
+          const reqLog = getRequestLogger(ctx)
 
-              const { value, done } = await prs.next()
+          const prId = ctx.query.id
+          if (!prId) {
+            throw new BadRequestError('missing ?id= param')
+          }
 
-              if (value) {
-                const result = await checkPr(reqLog, githubApi, value)
-                response.write(JSON.stringify(result, null, 2) + '\n\n')
-              }
+          if (typeof prId !== 'string' || !/^\d+$/.test(prId)) {
+            throw new BadRequestError('invalid ?id= param')
+          }
 
-              if (done) {
-                response.end()
-                break
-              }
-            }
-          },
-        }
-      }),
+          const pr = await githubApi.getPr(Number.parseInt(prId, 10))
+          return {
+            status: 200,
+            body: await checkPr(reqLog, githubApi, pr),
+          }
+        }),
+      ),
     ],
     apmAgent: {
       onRequest(request) {

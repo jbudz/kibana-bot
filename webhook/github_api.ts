@@ -81,6 +81,14 @@ export class GithubApi {
     return getCommitDate(resp.data.commit)
   }
 
+  public async getPr(prId: number) {
+    const prIdComponent = encodeURIComponent(`${prId}`)
+    const resp = await this.get<GithubApiPr>(
+      `/repos/elastic/kibana/pulls/${prIdComponent}`,
+    )
+    return resp.data
+  }
+
   public async *ittrAllOpenPrs() {
     const urls: (string | null)[] = [null]
 

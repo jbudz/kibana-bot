@@ -18,10 +18,10 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@spalger/micro-plus@^0.0.11":
-  version "0.0.11"
-  resolved "https://registry.yarnpkg.com/@spalger/micro-plus/-/micro-plus-0.0.11.tgz#49703d01562c9f1c7e35d2f6dfaab3bcf8473e6e"
-  integrity sha512-aefbA+WN4J5WKAMGdZbCCSAQj/19cfsGoozJEyKNhNfA67rguZji0ugug0pOhztVBRqQGwL344g3qaVtCVeJ9Q==
+"@spalger/micro-plus@^0.0.12":
+  version "0.0.12"
+  resolved "https://registry.yarnpkg.com/@spalger/micro-plus/-/micro-plus-0.0.12.tgz#a751c17f78acc6a237b0bfc924f92ab153d68001"
+  integrity sha512-duU59JnD8lzZK611xyNnVRhtoOTgtnu/A3wNBlgwxaioz3+bHnyFtAWosLuYE7Bbk171LSCsjiPB/KE8x8RY2g==
   dependencies:
     is-stream "^2.0.0"
     jsonwebtoken "^8.5.1"
