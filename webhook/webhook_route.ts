@@ -99,12 +99,14 @@ export function makeWebhookRoute(githubApi: GithubApi) {
       case 'pull_request':
         const { action, pull_request: pr } = webhook as PrWebhook
 
-        if (!RELEVANT_PR_ACTIONS.includes(action)) {
-          log.info(`ignoring webhook for irrelevant action [${action}]`, {
-            action,
-            prNumber: pr.number,
-          })
+        const relevant = RELEVANT_PR_ACTIONS.includes(action)
+        log.info('received pull_request webhook', {
+          action,
+          relevant,
+          prNumber: pr.number,
+        })
 
+        if (!relevant) {
           return {
             body: {
               ignored: true,
