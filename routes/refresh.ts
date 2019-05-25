@@ -17,20 +17,27 @@ export const refreshRoute = new Route(
     if (!prId) {
       throw new BadRequestError('missing ?id= param')
     }
-
     if (typeof prId !== 'string' || !/^\d+$/.test(prId)) {
       throw new BadRequestError('invalid ?id= param')
     }
 
+    const reactorId = ctx.query.reactor
+    if (reactorId && typeof reactorId !== 'string') {
+      throw new BadRequestError('invalid ?reactor= param')
+    }
+
     const pr = await githubApi.getPr(Number.parseInt(prId, 10))
-    const body = await runReactors(prReactors, {
-      context: {
-        action: 'refresh',
-        githubApi,
-        log,
-        pr,
+    const body = await runReactors(
+      prReactors.filter(r => !reactorId || r.id === reactorId),
+      {
+        context: {
+          action: 'refresh',
+          githubApi,
+          log,
+          pr,
+        },
       },
-    })
+    )
 
     return { body }
   }),
