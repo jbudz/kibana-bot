@@ -25,7 +25,7 @@ export const isAxiosErrorResp = (error: any): error is AxiosErrorResp =>
 type COMMIT_STATUS_STATE = 'error' | 'pending' | 'success' | 'failure'
 
 interface CommitStatusOptions {
-  status: COMMIT_STATUS_STATE
+  state: COMMIT_STATUS_STATE
   context: string
   description?: string
   target_url?: string

@@ -34,13 +34,13 @@ export const releaseNoteLabels = new PrReactor({
       if (hasReleaseNotesLabel) {
         await githubApi.setCommitStatus(pr.head.sha, {
           context: 'prbot:release note labels',
-          status: 'success',
+          state: 'success',
         })
       } else {
         await githubApi.setCommitStatus(pr.head.sha, {
           context: 'prbot:release note labels',
           description: 'release_note:* label missing',
-          status: 'failure',
+          state: 'failure',
         })
       }
     }
