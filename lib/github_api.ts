@@ -8,10 +8,16 @@ import { GithubApiPr, GithubApiCommit } from './github_api_types'
 import { makeContextCache } from './req_cache'
 import { getRequestLogger } from './log'
 
-interface AxiosErrorResp extends AxiosError {
+interface AxiosErrorReq extends AxiosError {
   request: any
+}
+
+interface AxiosErrorResp extends AxiosErrorReq {
   response: AxiosResponse
 }
+
+export const isAxiosErrorReq = (error: any): error is AxiosErrorReq =>
+  error && error.request
 
 export const isAxiosErrorResp = (error: any): error is AxiosErrorResp =>
   error && error.request && error.response
@@ -98,14 +104,17 @@ export class GithubApi {
     const url = `/repos/elastic/kibana/statuses/${shaComponent}`
     let resp
     try {
-      resp = await this.post(url, options)
+      resp = await this.post(url, {}, options)
+    } catch (error) {
+      resp = error
+      throw error
     } finally {
       this.log.info(`set commit status`, {
         data: {
           url,
           ref,
           options,
-          respJSON: `json:${JSON.stringify(resp)}`,
+          resp: resp,
         },
       })
     }
@@ -159,34 +168,57 @@ export class GithubApi {
     }
   }
 
-  private async get<Result = any>(
-    url: string,
-    params?: { [key: string]: any },
-  ): Promise<AxiosResponse<Result>> {
-    const resp = await this.ax({
-      method: 'get',
-      url,
-      params,
-    })
-
-    this.checkForRateLimitInfo(resp)
-    return resp
-  }
-
-  private async post<Result = any>(
+  private async req<Result = any>(
+    method: string,
     url: string,
     params?: { [key: string]: any },
     body?: { [key: string]: any },
   ): Promise<AxiosResponse<Result>> {
-    const resp = await this.ax({
-      method: 'post',
-      url,
-      params,
-      data: body,
-    })
+    try {
+      const resp = await this.ax({
+        method,
+        url,
+        params,
+        data: body,
+      })
 
-    this.checkForRateLimitInfo(resp)
-    return resp
+      this.checkForRateLimitInfo(resp)
+
+      return resp
+    } catch (error) {
+      if (isAxiosErrorResp(error)) {
+        this.checkForRateLimitInfo(error.response)
+        this.log.debug('github api response error', {
+          '@type': 'githubApiResponseError',
+          status: error.response.status,
+          data: {
+            method,
+            url,
+            params,
+            body,
+            response: {
+              headers: error.response.headers,
+              body: error.response.data,
+              status: error.response.status,
+              statusText: error.response.statusText,
+            },
+          },
+        })
+      } else if (isAxiosErrorReq(error)) {
+        this.log.debug('github api request error', {
+          '@type': 'githubApiRequestError',
+          errorMessage: error.message,
+          data: {
+            method,
+            url,
+            params,
+            body,
+          },
+        })
+      }
+
+      throw error
+    }
   }
 
   private checkForRateLimitInfo(resp: AxiosResponse<any>) {
@@ -200,6 +232,21 @@ export class GithubApi {
         Number.parseFloat(resp.headers['x-ratelimit-limit']),
       )
     }
+  }
+
+  private async get<Result = any>(
+    url: string,
+    params?: { [key: string]: any },
+  ) {
+    return this.req<Result>('get', url, params)
+  }
+
+  private async post<Result = any>(
+    url: string,
+    params?: { [key: string]: any },
+    body?: { [key: string]: any },
+  ) {
+    return this.req<Result>('post', url, params, body)
   }
 
   private logRateLimitInfo(remaining: number, total: number) {
