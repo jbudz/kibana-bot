@@ -26,18 +26,22 @@ export const log = winston.createLogger({
     winston.format.json(),
   ),
   transports: [
-    new winston.transports.File({
-      filename: resolve(getConfigVar('LOGS_DIR'), 'prbot.log'),
-      maxsize: 5 * MEGAB,
-      maxFiles: 5,
-    }),
-
-    new winston.transports.Console({
-      format: winston.format.combine(
-        filterRequestType(),
-        winston.format.simple(),
-      ),
-    }),
+    ...(process.env.NODE_ENV === 'development'
+      ? [
+          new winston.transports.Console({
+            format: winston.format.combine(
+              filterRequestType(),
+              winston.format.simple(),
+            ),
+          }),
+        ]
+      : [
+          new winston.transports.File({
+            filename: resolve(getConfigVar('LOGS_DIR'), 'prbot.log'),
+            maxsize: 5 * MEGAB,
+            maxFiles: 5,
+          }),
+        ]),
   ],
 })
 
