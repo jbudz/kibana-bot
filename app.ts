@@ -13,7 +13,7 @@ export function app(log: Log) {
       assignRootLogger(ctx, log)
     },
     routes,
-    apmAgent: {
+    hooks: {
       onRequest(request) {
         startTimes.set(request, Date.now())
       },
