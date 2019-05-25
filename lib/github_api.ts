@@ -95,7 +95,20 @@ export class GithubApi {
 
   public async setCommitStatus(ref: string, options: CommitStatusOptions) {
     const shaComponent = encodeURIComponent(ref)
-    await this.post(`/repos/elastic/kibana/statuses/${shaComponent}`, options)
+    const url = `/repos/elastic/kibana/statuses/${shaComponent}`
+    let resp
+    try {
+      resp = await this.post(url, options)
+    } finally {
+      this.log.info(`set commit status`, {
+        data: {
+          url,
+          ref,
+          options,
+          respJSON: `json:${JSON.stringify(resp)}`,
+        },
+      })
+    }
   }
 
   public async getPr(prId: number) {
