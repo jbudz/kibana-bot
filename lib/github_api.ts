@@ -16,6 +16,15 @@ interface AxiosErrorResp extends AxiosError {
 export const isAxiosErrorResp = (error: any): error is AxiosErrorResp =>
   error && error.request && error.response
 
+type COMMIT_STATUS_STATE = 'error' | 'pending' | 'success' | 'failure'
+
+interface CommitStatusOptions {
+  status: COMMIT_STATUS_STATE
+  context: string
+  description?: string
+  target_url?: string
+}
+
 const getCommitDate = (commit: GithubApiCommit) => {
   const committerDate = new Date(commit.committer.date)
   const authorDate = new Date(commit.author.date)
@@ -84,6 +93,11 @@ export class GithubApi {
     return getCommitDate(resp.data.commit)
   }
 
+  public async setCommitStatus(ref: string, options: CommitStatusOptions) {
+    const shaComponent = encodeURIComponent(ref)
+    await this.post(`/repos/elastic/kibana/statuses/${shaComponent}`, options)
+  }
+
   public async getPr(prId: number) {
     const prIdComponent = encodeURIComponent(`${prId}`)
     const resp = await this.get<GithubApiPr>(
@@ -136,10 +150,33 @@ export class GithubApi {
     url: string,
     params?: { [key: string]: any },
   ): Promise<AxiosResponse<Result>> {
-    const resp = await this.ax.get(url, {
+    const resp = await this.ax({
+      method: 'get',
+      url,
       params,
     })
 
+    this.checkForRateLimitInfo(resp)
+    return resp
+  }
+
+  private async post<Result = any>(
+    url: string,
+    params?: { [key: string]: any },
+    body?: { [key: string]: any },
+  ): Promise<AxiosResponse<Result>> {
+    const resp = await this.ax({
+      method: 'post',
+      url,
+      params,
+      data: body,
+    })
+
+    this.checkForRateLimitInfo(resp)
+    return resp
+  }
+
+  private checkForRateLimitInfo(resp: AxiosResponse<any>) {
     if (
       resp.headers &&
       resp.headers['x-ratelimit-limit'] &&
@@ -150,8 +187,6 @@ export class GithubApi {
         Number.parseFloat(resp.headers['x-ratelimit-limit']),
       )
     }
-
-    return resp
   }
 
   private logRateLimitInfo(remaining: number, total: number) {

@@ -13,10 +13,12 @@ export const releaseNoteLabels = new PrReactor({
 
   filter: ({ pr, action }) =>
     pr.state === 'open' &&
+    !pr.draft &&
     RELEVANT_ACTIONS.includes(action) &&
-    pr.labels.some(label => label.name === ':Canvas'),
+    (pr.user.login === 'spalger' ||
+      pr.labels.some(label => label.name === ':Canvas')),
 
-  async exec({ pr, log }) {
+  async exec({ pr, githubApi, log }) {
     const hasReleaseNotesLabel = pr.labels.some(label =>
       label.name.startsWith('release_note:'),
     )
@@ -26,6 +28,21 @@ export const releaseNoteLabels = new PrReactor({
       hasReleaseNotesLabel,
       labelNames: pr.labels.map(label => label.name),
     })
+
+    if (pr.title.includes('test stale pr bot')) {
+      if (hasReleaseNotesLabel) {
+        await githubApi.setCommitStatus(pr.head.sha, {
+          context: 'prbot:release note labels',
+          status: 'success',
+        })
+      } else {
+        await githubApi.setCommitStatus(pr.head.sha, {
+          context: 'prbot:release note labels',
+          description: 'release_note:* label missing',
+          status: 'failure',
+        })
+      }
+    }
 
     return { hasReleaseNotesLabel }
   },
