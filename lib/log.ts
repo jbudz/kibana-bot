@@ -16,7 +16,7 @@ const filterRequestType = winston.format((info: any) =>
 
 export type Log = winston.Logger
 export const log = winston.createLogger({
-  level: 'info',
+  level: 'debug',
   defaultMeta: { service: 'prbot' },
   format: winston.format.combine(
     winston.format.timestamp(),
