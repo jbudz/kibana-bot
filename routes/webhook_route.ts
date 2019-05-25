@@ -15,6 +15,7 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
   const { event, webhook } = await parseWebhook(ctx, log)
 
   log.info(`received webhook [${event}]`, {
+    '@type': 'receivedWebhook',
     event,
     data: {
       webhook,

@@ -21,7 +21,8 @@ export const releaseNoteLabels = new PrReactor({
       label.name.startsWith('release_note:'),
     )
 
-    log.info('canvas issue relase notes', {
+    log.info('checked for release note labels', {
+      '@type': 'releaseNoteLabels:result',
       hasReleaseNotesLabel,
       labelNames: pr.labels.map(label => label.name),
     })

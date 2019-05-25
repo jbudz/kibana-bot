@@ -16,11 +16,7 @@ export const outdated = new PrReactor({
     return RELEVANT_ACTIONS.includes(action)
   },
 
-  async exec({ log, githubApi, pr }) {
-    log.info(`running outdated #${pr.number}`, {
-      prNumber: pr.number,
-    })
-
+  async exec({ githubApi, pr }) {
     const compare = await retryOn404(
       async () => await githubApi.compare(pr.head.sha, pr.base.label),
     )

@@ -19,9 +19,9 @@ export async function runReactors<C extends ReactorContext>(
       continue
     }
 
-    context.log.info(`Executing ${reactor.id} reactor`, {
-      action: 'executeReactor',
-      reactor: reactor.id,
+    context.log.info(`Executing reactor [${reactor.id}]`, {
+      '@type': 'executeReactor',
+      reactorId: reactor.id,
     })
 
     promises.push(
