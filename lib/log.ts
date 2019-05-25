@@ -3,7 +3,7 @@ import { resolve } from 'path'
 import winston from 'winston'
 import { getConfigVar } from '@spalger/micro-plus'
 
-import { makeReqCache } from './req_cache'
+import { makeContextCache } from './req_cache'
 import { getRequestId } from './req_id'
 
 const KILOB = 1000
@@ -41,11 +41,11 @@ export const log = winston.createLogger({
   ],
 })
 
-const rootLoggerCache = makeReqCache<Log>('root logger')
+const rootLoggerCache = makeContextCache<Log>('root logger')
 export const getRootLogger = rootLoggerCache.get
 export const assignRootLogger = rootLoggerCache.assignValue
 
-const reqLoggerCache = makeReqCache('logger', ctx =>
+const reqLoggerCache = makeContextCache('logger', ctx =>
   rootLoggerCache.get(ctx).child({
     requestId: getRequestId(ctx),
   }),

@@ -1,6 +1,6 @@
 import uuid from 'uuid/v4'
 
-import { makeReqCache } from './req_cache'
+import { makeContextCache } from './req_cache'
 
-const requestIdCache = makeReqCache('requestId', () => uuid())
+const requestIdCache = makeContextCache('requestId', () => uuid())
 export const getRequestId = requestIdCache.get

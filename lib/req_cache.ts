@@ -1,16 +1,16 @@
 import { ReqContext } from '@spalger/micro-plus'
 
-export function makeReqCache<V, T extends object = ReqContext>(
+export function makeContextCache<V>(
   name: string,
-  factory?: (ctx: T) => V,
+  factory?: (ctx: ReqContext) => V,
 ) {
-  const cache = new WeakMap<T, V>()
+  const cache = new WeakMap<ReqContext, V>()
 
-  function has(ctx: T): boolean {
+  function has(ctx: ReqContext): boolean {
     return cache.has(ctx)
   }
 
-  function assignValue(ctx: T, value: V): V {
+  function assignValue(ctx: ReqContext, value: V): V {
     if (has(ctx)) {
       throw new Error(`${name} already assigned to req [${cache.get(ctx)}]`)
     }
@@ -19,7 +19,7 @@ export function makeReqCache<V, T extends object = ReqContext>(
     return value
   }
 
-  function autoAssignValue(ctx: T) {
+  function autoAssignValue(ctx: ReqContext) {
     if (!factory) {
       throw new Error(
         'autoAssignValue() requires a factory function be defined',
@@ -29,7 +29,7 @@ export function makeReqCache<V, T extends object = ReqContext>(
     return assignValue(ctx, factory(ctx))
   }
 
-  function get(ctx: T): V {
+  function get(ctx: ReqContext): V {
     if (!has(ctx)) {
       if (factory) {
         assignValue(ctx, factory(ctx))

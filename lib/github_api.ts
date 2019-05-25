@@ -1,9 +1,12 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
 import parseLinkHeader from 'parse-link-header'
 import throttle from 'lodash.throttle'
+import { getConfigVar } from '@spalger/micro-plus'
 
 import { Log } from '../lib'
 import { GithubApiPr, GithubApiCommit } from './github_api_types'
+import { makeContextCache } from './req_cache'
+import { getRequestLogger } from './log'
 
 interface AxiosErrorResp extends AxiosError {
   request: any
@@ -161,3 +164,10 @@ export class GithubApi {
     })
   }
 }
+
+const githubApiCache = makeContextCache('github api', ctx => {
+  return new GithubApi(getRequestLogger(ctx), getConfigVar('GITHUB_SECRET'))
+})
+
+export const getGithubApi = githubApiCache.get
+export const assignGithubApi = githubApiCache.assignValue
