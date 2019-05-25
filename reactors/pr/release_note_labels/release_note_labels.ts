@@ -1,11 +1,19 @@
 import { PrReactor } from '../pr_reactor'
 
+const RELEVANT_ACTIONS = [
+  'labeled',
+  'unlabeled',
+  'opened',
+  'synchronize',
+  'refresh',
+]
+
 export const releaseNoteLabels = new PrReactor({
   id: 'releaseNoteLabels',
 
   filter: ({ pr, action }) =>
     pr.state === 'open' &&
-    ['labeled', 'unlabeled', 'opened', 'synchronize'].includes(action) &&
+    RELEVANT_ACTIONS.includes(action) &&
     pr.labels.some(label => label.name === ':Canvas'),
 
   async exec({ pr, log }) {

@@ -24,7 +24,6 @@ export const refreshRoute = new Route(
 
     const pr = await githubApi.getPr(Number.parseInt(prId, 10))
     const body = await runPrReactors({
-      force: true,
       context: {
         action: 'refresh',
         githubApi,

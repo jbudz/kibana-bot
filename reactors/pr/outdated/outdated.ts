@@ -7,13 +7,13 @@ const SECOND = 1000
 const MINUTE = SECOND * 60
 const HOUR = MINUTE * 60
 
-const RELEVANT_PR_ACTIONS = ['opened', 'synchronize']
+const RELEVANT_ACTIONS = ['opened', 'synchronize', 'refresh']
 
 export const outdated = new PrReactor({
   id: 'outdated',
 
   filter({ action }) {
-    return RELEVANT_PR_ACTIONS.includes(action)
+    return RELEVANT_ACTIONS.includes(action)
   },
 
   async exec({ log, githubApi, pr }) {

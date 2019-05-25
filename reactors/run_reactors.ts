@@ -1,20 +1,18 @@
 import { Reactor, ReactorContext } from './reactor'
 
+export interface RunReactorOptions<C> {
+  context: C
+}
+
 export async function runReactors<C extends ReactorContext>(
   reactors: Reactor<C>[],
-  {
-    force = false,
-    context,
-  }: {
-    force?: boolean
-    context: C
-  },
+  { context }: RunReactorOptions<C>,
 ) {
   const combinedResult: Record<string, { skipped: boolean; result?: any }> = {}
   const promises = []
 
   for (const reactor of reactors) {
-    if (!force && !reactor.filter(context)) {
+    if (!reactor.filter(context)) {
       combinedResult[reactor.id] = {
         skipped: true,
       }

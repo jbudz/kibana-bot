@@ -30,7 +30,6 @@ export const refreshAllRoute = new Route(
 
           if (value) {
             const result = await runPrReactors({
-              force: true,
               context: {
                 action: 'refresh',
                 githubApi,
