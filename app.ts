@@ -37,7 +37,7 @@ export function app(log: Log) {
             response.statusCode
           } ${reqTime}ms`,
           {
-            type: 'request',
+            '@type': 'request',
             method: request.method,
             url: request.url,
             status: response.statusCode,
