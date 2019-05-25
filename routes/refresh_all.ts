@@ -5,7 +5,7 @@ import {
   getRequestLogger,
 } from '../lib'
 import { ServerResponse } from 'http'
-import { runPrReactors } from '../reactors'
+import { runReactors, prReactors } from '../reactors'
 
 export const refreshAllRoute = new Route(
   'GET',
@@ -29,7 +29,7 @@ export const refreshAllRoute = new Route(
           const { value, done } = await prs.next()
 
           if (value) {
-            const result = await runPrReactors({
+            const result = await runReactors(prReactors, {
               context: {
                 action: 'refresh',
                 githubApi,

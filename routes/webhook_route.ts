@@ -6,7 +6,7 @@ import {
   getGithubApi,
   getRequestLogger,
 } from '../lib'
-import { runPrReactors } from '../reactors'
+import { runReactors, prReactors } from '../reactors'
 
 export const webhookRoute = new Route('POST', '/webhook', async ctx => {
   const log = getRequestLogger(ctx)
@@ -28,7 +28,7 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
         pull_request: GithubApiPr
       }
 
-      const body = await runPrReactors({
+      const body = await runReactors(prReactors, {
         context: {
           action,
           pr,

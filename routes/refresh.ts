@@ -4,7 +4,7 @@ import {
   getGithubApi,
 } from '../lib'
 import { Route, BadRequestError } from '@spalger/micro-plus'
-import { runPrReactors } from '../reactors'
+import { runReactors, prReactors } from '../reactors'
 
 export const refreshRoute = new Route(
   'GET',
@@ -23,7 +23,7 @@ export const refreshRoute = new Route(
     }
 
     const pr = await githubApi.getPr(Number.parseInt(prId, 10))
-    const body = await runPrReactors({
+    const body = await runReactors(prReactors, {
       context: {
         action: 'refresh',
         githubApi,
