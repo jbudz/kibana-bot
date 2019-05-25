@@ -6,6 +6,7 @@ const RELEVANT_ACTIONS = [
   'opened',
   'synchronize',
   'refresh',
+  'ready_for_review',
 ]
 
 export const releaseNoteLabels = new PrReactor({
