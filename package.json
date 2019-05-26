@@ -7,7 +7,20 @@
     "type_check": "tsc --noEmit"
   },
   "dependencies": {
+    "@babel/preset-typescript": "^7.3.3",
     "@spalger/micro-plus": "^0.0.13",
+    "axios": "^0.18.0",
+    "dotenv": "^7.0.0",
+    "elastic-apm-node": "^2.10.0",
+    "execa": "^1.0.0",
+    "humanize-duration": "^3.18.0",
+    "lodash.throttle": "^4.1.1",
+    "parse-link-header": "^1.0.1",
+    "source-map-support": "^0.5.12",
+    "uuid": "^3.3.2",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {
     "@types/execa": "^0.9.0",
     "@types/humanize-duration": "^3.18.0",
     "@types/lodash.throttle": "^4.1.6",
@@ -18,22 +31,12 @@
     "@types/uuid": "^3.4.4",
     "@typescript-eslint/eslint-plugin": "^1.5.0",
     "@typescript-eslint/parser": "^1.5.0",
-    "axios": "^0.18.0",
-    "dotenv": "^7.0.0",
-    "elastic-apm-node": "^2.10.0",
     "eslint": "^5.16.0",
     "eslint-config-prettier": "^4.1.0",
     "eslint-plugin-prettier": "^3.0.1",
-    "execa": "^1.0.0",
-    "humanize-duration": "^3.18.0",
-    "lodash.throttle": "^4.1.1",
-    "parse-link-header": "^1.0.1",
     "prettier": "^1.16.4",
-    "source-map-support": "^0.5.12",
     "ts-node": "^8.0.3",
-    "typescript": "^3.4.1",
-    "uuid": "^3.3.2",
-    "winston": "^3.2.1"
+    "typescript": "^3.4.1"
   },
   "engines": {
     "node": "11"
