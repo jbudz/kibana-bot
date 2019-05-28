@@ -18,7 +18,7 @@ export async function parseWebhook(ctx: ReqContext, log: Log) {
   const hmac = Crypto.createHmac('sha1', WEBHOOK_SECRET)
 
   await pipelineAsync(
-    ctx.request,
+    ctx.readBodyAsStream(),
     new Writable({
       write(chunk, _, cb) {
         try {

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@babel/preset-typescript": "^7.3.3",
-    "@spalger/micro-plus": "^0.0.13",
+    "@spalger/micro-plus": "^0.0.16",
     "axios": "^0.18.0",
     "dotenv": "^7.0.0",
     "elastic-apm-node": "^2.10.0",
