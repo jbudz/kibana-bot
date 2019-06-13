@@ -6,7 +6,8 @@
   "scripts": {
     "build": "babel src -d dist --delete-dir-on-start -x .ts --source-maps",
     "type_check": "tsc --noEmit",
-    "test": "yarn type_check"
+    "lint": "yarn eslint . --ext .ts,.js",
+    "test": "yarn type_check && yarn lint"
   },
   "dependencies": {
     "@babel/preset-typescript": "^7.3.3",

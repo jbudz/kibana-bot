@@ -36,9 +36,7 @@ export function app(log: Log) {
         const reqTime = endTime - startTimes.get(request)!
 
         log.info(
-          `${request.method} ${request.url} - ${
-            response.statusCode
-          } ${reqTime}ms`,
+          `${request.method} ${request.url} - ${response.statusCode} ${reqTime}ms`,
           {
             '@type': 'request',
             method: request.method,
