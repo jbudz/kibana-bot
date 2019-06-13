@@ -4,7 +4,12 @@ import throttle from 'lodash.throttle'
 import { getConfigVar } from '@spalger/micro-plus'
 
 import { Log } from '../lib'
-import { GithubApiPr, GithubApiCommit } from './github_api_types'
+import {
+  GithubApiPr,
+  GithubApiCompare,
+  Commit,
+  GithubApiCompareCommit,
+} from '../github_api_types'
 import { makeContextCache } from './req_cache'
 import { getRequestLogger } from './log'
 
@@ -31,7 +36,7 @@ interface CommitStatusOptions {
   target_url?: string
 }
 
-const getCommitDate = (commit: GithubApiCommit) => {
+const getCommitDate = (commit: Commit) => {
   const committerDate = new Date(commit.committer.date)
   const authorDate = new Date(commit.author.date)
   return committerDate > authorDate ? committerDate : authorDate
@@ -55,23 +60,26 @@ export class GithubApi {
     })
   }
 
-  public async compare(headRef: string, baseRef: string) {
+  public async compare(
+    headRef: string,
+    baseRef: string,
+  ): Promise<{
+    totalMissingCommits: number
+    missingCommits: GithubApiCompareCommit[]
+  }> {
     const headComponent = encodeURIComponent(headRef)
     const baseComponent = encodeURIComponent(baseRef)
     const url = `/repos/elastic/kibana/compare/${headComponent}...${baseComponent}`
 
-    const resp = await this.get(url)
+    const resp = await this.get<GithubApiCompare>(url)
 
-    const {
-      ahead_by: missingCommits,
-      commits: [oldestMissingCommit],
-    } = resp.data
+    const { ahead_by: totalMissingCommits, commits: missingCommits } = resp.data
 
-    if (missingCommits > 0 && !oldestMissingCommit) {
+    if (totalMissingCommits > 0 && !missingCommits.length) {
       this.log.error(
         'unexpected github response, expected oldest missing commit',
         {
-          missingCommits,
+          totalMissingCommits,
           respBody: resp.data,
         },
       )
@@ -79,17 +87,9 @@ export class GithubApi {
       throw new Error('Unexpected github response')
     }
 
-    if (!oldestMissingCommit) {
-      return {
-        missingCommits,
-      }
-    }
-
-    const oldestMissingCommitDate = getCommitDate(oldestMissingCommit.commit)
-
     return {
+      totalMissingCommits,
       missingCommits,
-      oldestMissingCommitDate,
     }
   }
 

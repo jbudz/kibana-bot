@@ -2,6 +2,7 @@ import {
   requireDirectApiPassword,
   getRequestLogger,
   getGithubApi,
+  getEsClient,
 } from '../lib'
 import { Route, BadRequestError } from '@spalger/micro-plus'
 import { runReactors, prReactors } from '../reactors'
@@ -11,6 +12,7 @@ export const refreshRoute = new Route(
   '/refresh',
   requireDirectApiPassword(async ctx => {
     const log = getRequestLogger(ctx)
+    const es = getEsClient(ctx)
     const githubApi = getGithubApi(ctx)
 
     const prId = ctx.query.id
@@ -31,10 +33,13 @@ export const refreshRoute = new Route(
       prReactors.filter(r => !reactorId || r.id === reactorId),
       {
         context: {
-          action: 'refresh',
+          input: {
+            action: 'refresh',
+            pr,
+          },
           githubApi,
           log,
-          pr,
+          es,
         },
       },
     )

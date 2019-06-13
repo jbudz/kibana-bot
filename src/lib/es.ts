@@ -1,0 +1,108 @@
+import { Client } from '@elastic/elasticsearch'
+import { getConfigVar } from '@spalger/micro-plus'
+
+import { Log } from './log'
+import { makeContextCache } from './req_cache'
+
+export function createRootClient(log: Log) {
+  const es = new Client({
+    node: getConfigVar('ES_URL'),
+  })
+
+  es.on('response', (error: any) => {
+    if (error && error.meta) {
+      const { body, statusCode, headers, warnings } = error.meta as {
+        body: unknown
+        statusCode?: number
+        headers: unknown
+        warnings: unknown
+      }
+
+      log.error('ES ERROR', {
+        '@type': 'esError',
+        data: {
+          body,
+          statusCode,
+          headers,
+          warnings,
+        },
+      })
+    } else if (error) {
+      log.error('UNKNOWN ES ERROR', {
+        '@type': 'unknownEsError',
+        data: error,
+      })
+    }
+  })
+
+  return es
+}
+
+const cache = makeContextCache<Client>('es client')
+export const assignEsClient = cache.assignValue
+export const getEsClient = cache.get
+
+export async function getOldestMissingCommitDate(es: Client, sha: string) {
+  const resp = await es.get(
+    {
+      index: 'prbot-commit-times',
+      id: sha,
+    },
+    {
+      ignore: [404],
+    },
+  )
+
+  if (!resp.body.found) {
+    return undefined
+  }
+
+  return new Date(resp.body._source.pushTime)
+}
+
+export async function* scrollSearch<T = any>(es: Client, params: any) {
+  const page1 = await es.search({
+    scroll: '1m',
+    ...params,
+  })
+  let remaining = page1.body.hits.total
+  let scrollId = page1.body._scroll_id
+  const oldScrollIds = new Set<string>()
+
+  interface Body {
+    _scroll_id: string
+    hits: { hits: T[] }
+  }
+
+  function* yieldPage(page: { body: Body }) {
+    oldScrollIds.add(scrollId)
+    scrollId = page.body._scroll_id
+
+    for (const hit of page1.body.hits.hits) {
+      yield hit
+      remaining -= 1
+    }
+  }
+
+  try {
+    yield* yieldPage(page1)
+    while (remaining > 0) {
+      yield* yieldPage(
+        await es.scroll({
+          scroll: '1m',
+          scroll_id: scrollId,
+        }),
+      )
+    }
+  } finally {
+    try {
+      if (oldScrollIds.size) {
+        await es.clearScroll({
+          scroll_id: [...oldScrollIds],
+        })
+      }
+    } catch (error) {
+      // ignore
+    }
+  }
+}

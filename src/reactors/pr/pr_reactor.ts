@@ -1,8 +1,9 @@
-import { GithubApiPr } from '../../lib'
-import { ReactorContext, Reactor } from '../reactor'
+import { Reactor } from '../reactor'
+import { GithubWebhookPullRequestEvent } from '../../github_api_types'
 
-export interface PrReactorContext extends ReactorContext {
-  pr: GithubApiPr
+export interface ReactorInput {
+  action: GithubWebhookPullRequestEvent['action'] | 'refresh'
+  pr: GithubWebhookPullRequestEvent['pull_request']
 }
 
-export class PrReactor extends Reactor<PrReactorContext> {}
+export class PrReactor extends Reactor<ReactorInput> {}

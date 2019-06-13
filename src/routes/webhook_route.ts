@@ -2,11 +2,15 @@ import { Route, ServerError } from '@spalger/micro-plus'
 
 import {
   parseWebhook,
-  GithubApiPr,
   getGithubApi,
   getRequestLogger,
+  getEsClient,
 } from '../lib'
-import { runReactors, prReactors } from '../reactors'
+import {
+  GithubWebhookPullRequestEvent,
+  GithubWebhookPushEvent,
+} from '../github_api_types'
+import { runReactors, prReactors, pushReactors } from '../reactors'
 
 export const webhookRoute = new Route('POST', '/webhook', async ctx => {
   const log = getRequestLogger(ctx)
@@ -24,23 +28,33 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
 
   switch (event) {
     case 'pull_request':
-      const { action, pull_request: pr } = webhook as {
-        action: string
-        pull_request: GithubApiPr
+      const wh = webhook as GithubWebhookPullRequestEvent
+      return {
+        body: await runReactors(prReactors, {
+          context: {
+            input: {
+              action: wh.action,
+              pr: wh.pull_request,
+            },
+            githubApi,
+            log,
+            es: getEsClient(ctx),
+          },
+        }),
       }
 
-      const body = await runReactors(prReactors, {
-        context: {
-          action,
-          pr,
-          githubApi,
-          log,
-        },
-      })
-
-      return { body }
-
     case 'push':
+      return {
+        body: await runReactors(pushReactors, {
+          context: {
+            input: webhook as GithubWebhookPushEvent,
+            githubApi,
+            log,
+            es: getEsClient(ctx),
+          },
+        }),
+      }
+
     case 'ping':
       return {
         statusCode: 200,

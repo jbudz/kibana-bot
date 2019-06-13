@@ -1,12 +1,12 @@
 import { Reactor, ReactorContext } from './reactor'
 
-export interface RunReactorOptions<C> {
-  context: C
+export interface RunReactorOptions<E> {
+  context: ReactorContext<E>
 }
 
-export async function runReactors<C extends ReactorContext>(
-  reactors: Reactor<C>[],
-  { context }: RunReactorOptions<C>,
+export async function runReactors<E>(
+  reactors: Reactor<E>[],
+  { context }: RunReactorOptions<E>,
 ) {
   const combinedResult: Record<string, { skipped: boolean; result?: any }> = {}
   const promises = []
