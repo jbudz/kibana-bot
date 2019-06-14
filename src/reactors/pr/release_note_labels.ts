@@ -15,11 +15,7 @@ export const releaseNoteLabels = new PrReactor({
   id: 'releaseNoteLabels',
 
   filter: ({ input: { action, pr } }) =>
-    pr.state === 'open' &&
-    !pr.draft &&
-    !pr.labels.some(l => l.name === 'backport') &&
-    RELEASE_BRANCH_RE.test(pr.base.ref) &&
-    RELEVANT_ACTIONS.includes(action),
+    pr.state === 'open' && !pr.draft && RELEVANT_ACTIONS.includes(action),
 
   async exec({ input: { pr }, githubApi }) {
     const labelNames = pr.labels.map(label => label.name)
@@ -27,7 +23,12 @@ export const releaseNoteLabels = new PrReactor({
       n.startsWith('release_note:'),
     )
 
-    if (missingReleaseNotesLabel) {
+    // we must check these in exec() since they can change over time so we don't want
+    // to orphan a PR that became a backport PR or was retargetted away from master
+    const isBasedOnReleaseBranch = RELEASE_BRANCH_RE.test(pr.base.ref)
+    const isBackport = labelNames.includes('backport')
+
+    if (isBasedOnReleaseBranch && missingReleaseNotesLabel && !isBackport) {
       await githubApi.setCommitStatus(pr.head.sha, {
         context: 'prbot:release note labels',
         description: 'All PRs require a release_note:* label',
