@@ -60,6 +60,28 @@ export async function getOldestMissingCommitDate(es: Client, sha: string) {
   return new Date(resp.body._source.pushTime)
 }
 
+export async function recordCommitStatus(
+  es: Client,
+  prNumber: number,
+  sha: string,
+  commitStatusOptions: { [key: string]: any },
+) {
+  const url = `https://api.github.com/repos/elastic/kibana/statuses/${encodeURIComponent(
+    sha,
+  )}`
+
+  await es.index({
+    index: 'prbot-commit-status-sets',
+    id: sha,
+    body: {
+      url,
+      '@timestamp': new Date(),
+      prNumber,
+      ...commitStatusOptions,
+    },
+  })
+}
+
 export async function* scrollSearch<T = any>(es: Client, params: any) {
   const page1 = await es.search({
     scroll: '1m',

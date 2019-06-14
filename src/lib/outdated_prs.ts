@@ -1,6 +1,7 @@
 import { Client } from '@elastic/elasticsearch'
 
 import { GithubApi } from './github_api'
+import { recordCommitStatus } from './es'
 
 const SECOND = 1000
 const MINUTE = SECOND * 60
@@ -69,6 +70,8 @@ export async function applyOutdatedResult({
     state,
     description,
   }
+
+  await recordCommitStatus(es, prNumber, prHeadSha, commitStatus)
   await githubApi.setCommitStatus(prHeadSha, commitStatus)
 
   /** fin */
