@@ -1,10 +1,13 @@
 import { GithubWebhookPushEvent } from '../../github_api_types'
 import { Reactor } from '../reactor'
+import { RELEASE_BRANCH_RE } from '../../lib'
 
 export const storePushTime = new Reactor<GithubWebhookPushEvent>({
   id: 'storePushTime',
 
-  filter: ({ input }) => !input.deleted,
+  filter: ({ input }) =>
+    !input.deleted &&
+    RELEASE_BRANCH_RE.test(input.ref.replace('refs/heads/', '')),
 
   async exec({ input, es, log }) {
     const body = []

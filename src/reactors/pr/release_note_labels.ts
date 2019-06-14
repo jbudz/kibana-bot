@@ -1,4 +1,5 @@
 import { ReactorInput, PrReactor } from './pr_reactor'
+import { RELEASE_BRANCH_RE } from '../../lib'
 
 const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'labeled',
@@ -8,8 +9,6 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'refresh',
   'ready_for_review',
 ]
-
-const RELEASE_BRANCH_RE = /^(master|\d+\.\d+|\d\.x)$/
 
 export const releaseNoteLabels = new PrReactor({
   id: 'releaseNoteLabels',
