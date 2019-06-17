@@ -21,7 +21,7 @@ export const outdated = new PrReactor({
   filter: ({ input }) =>
     !input.pr.draft && RELEVANT_ACTIONS.includes(input.action),
 
-  async exec({ githubApi, input: { pr, action }, es }) {
+  async exec({ githubApi, input: { pr, action }, es, log }) {
     // when prs are closed, or if they were previously closed and
     // we're refreshing, then cleanup
     if (action === 'closed' || pr.closed_at) {
@@ -30,6 +30,7 @@ export const outdated = new PrReactor({
     }
 
     const { totalMissingCommits, missingCommits } = await retryOn404(
+      log,
       async () => await githubApi.compare(pr.head.sha, pr.base.label),
     )
 
