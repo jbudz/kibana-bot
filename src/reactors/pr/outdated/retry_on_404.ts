@@ -14,7 +14,7 @@ export const retryOn404 = async <T>(log: Log, fn: () => T) => {
         error.response.status === 404 &&
         attempt <= 5
       ) {
-        log.warning('Github responded with a 404, retrying in 2 seconds', {
+        log.warn('Github responded with a 404, retrying in 2 seconds', {
           '@type': 'github404Retry',
           attempt,
         })
