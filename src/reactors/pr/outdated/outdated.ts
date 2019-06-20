@@ -16,8 +16,8 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
 ]
 
 const REQUIRED_COMMITS: {[branch: string]: string[] | undefined} = {
-  master: ['2d171c92f59e254591f32bbfe0b894cd76e1e044'],
-  '7.x': ['a973cbc7a9ae9cd2c2b24d9d6a5b45906e8fdfa4']
+  master: ['48c5df2e98fcf0eb9d08a4fae3bc4a36cb1ca78f'],
+  '7.x': ['4334922c220569a97ca4dbd870acf26bef9b5aab']
 }
 
 export const outdated = new PrReactor({
