@@ -29,6 +29,7 @@ export async function applyOutdatedResult({
   prHeadSha,
   prUserLogin,
   timeBehind = TIME_LIMIT,
+  missingRequiredCommit = false
 }: {
   es: Client
   githubApi: GithubApi
@@ -36,8 +37,9 @@ export async function applyOutdatedResult({
   prHeadSha: string
   prUserLogin: string
   timeBehind?: number
+  missingRequiredCommit?: boolean
 }) {
-  const success = timeBehind < TIME_LIMIT
+  const success = timeBehind < TIME_LIMIT && !missingRequiredCommit
 
   /**
    * Store/clear the expiration time of success statuses
@@ -63,12 +65,11 @@ export async function applyOutdatedResult({
    */
   const state = success ? ('success' as const) : ('failure' as const)
   const update = `run \`node scripts/update_prs ${prNumber}\` to update`
-  const old = `, > 48h old`
-  const description = update + (success ? '' : old)
+  const reason = (timeBehind > TIME_LIMIT ? `, > 48h old` : '') + (missingRequiredCommit ? `, missing required commit` : '')
   const commitStatus = {
     context: 'prbot:outdated',
     state,
-    description,
+    description: update + reason,
   }
 
   await recordCommitStatus(es, prNumber, prHeadSha, commitStatus)
