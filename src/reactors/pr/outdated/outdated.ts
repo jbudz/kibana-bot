@@ -15,9 +15,9 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'closed',
 ]
 
-const REQUIRED_COMMITS: {[branch: string]: string[] | undefined} = {
+const REQUIRED_COMMITS: { [branch: string]: string[] | undefined } = {
   master: ['48c5df2e98fcf0eb9d08a4fae3bc4a36cb1ca78f'],
-  '7.x': ['4334922c220569a97ca4dbd870acf26bef9b5aab']
+  '7.x': ['4334922c220569a97ca4dbd870acf26bef9b5aab'],
 }
 
 export const outdated = new PrReactor({
@@ -44,7 +44,9 @@ export const outdated = new PrReactor({
       oldestMissingCommitCommiterDate
 
     const requiredCommits = REQUIRED_COMMITS[pr.base.ref] || []
-    const missingRequiredCommits = missingCommits.filter(c => requiredCommits.includes(c.sha)).length
+    const missingRequiredCommits = missingCommits.filter(c =>
+      requiredCommits.includes(c.sha),
+    ).length
 
     if (totalMissingCommits > 0) {
       const oldestMissingCommit = missingCommits[0]
@@ -81,7 +83,7 @@ export const outdated = new PrReactor({
         prHeadSha: pr.head.sha,
         prUserLogin: pr.user.login,
         timeBehind,
-        missingRequiredCommit: missingRequiredCommits > 0
+        missingRequiredCommit: missingRequiredCommits > 0,
       })),
     }
   },
