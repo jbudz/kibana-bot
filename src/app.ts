@@ -1,7 +1,17 @@
 import apm from 'elastic-apm-node'
-import { createMicroHandler, NotFoundError } from '@spalger/micro-plus'
+import {
+  createMicroHandler,
+  NotFoundError,
+  ReqContext,
+} from '@spalger/micro-plus'
 
-import { Log, assignRootLogger, createRootClient, assignEsClient } from './lib'
+import {
+  Log,
+  assignRootLogger,
+  getRequestLogger,
+  createRootClient,
+  assignEsClient,
+} from './lib'
 import { routes } from './routes'
 import { IncomingMessage } from 'http'
 
@@ -9,6 +19,7 @@ const startTimes = new WeakMap<IncomingMessage, number>()
 
 export function app(log: Log) {
   const es = createRootClient(log)
+  const ctxForResponse = new WeakMap<IncomingMessage, ReqContext>()
 
   return createMicroHandler({
     onRequest(ctx) {
@@ -20,7 +31,8 @@ export function app(log: Log) {
       onRequest(request) {
         startTimes.set(request, Date.now())
       },
-      onRequestParsed(ctx) {
+      onRequestParsed(ctx, req) {
+        ctxForResponse.set(req, ctx)
         apm.startTransaction(`${ctx.method} ${ctx.pathname}`)
       },
       onResponse() {},
@@ -34,8 +46,10 @@ export function app(log: Log) {
       beforeSend(request, response) {
         const endTime = Date.now()
         const reqTime = endTime - startTimes.get(request)!
+        const ctx = ctxForResponse.get(request)
+        let maybeReqLog = ctx ? getRequestLogger(ctx) : log
 
-        log.info(
+        maybeReqLog.info(
           `${request.method} ${request.url} - ${response.statusCode} ${reqTime}ms`,
           {
             '@type': 'request',
