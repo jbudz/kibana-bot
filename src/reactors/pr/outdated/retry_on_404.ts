@@ -18,7 +18,9 @@ export const retryOn404 = async <T>(log: Log, fn: () => T) => {
           '@type': 'github404Retry',
           attempt,
         })
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        await new Promise(resolve =>
+          setTimeout(resolve, Math.pow(2000, attempt)),
+        )
         continue
       }
 
