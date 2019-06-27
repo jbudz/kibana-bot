@@ -26,24 +26,24 @@ export interface GithubOrg {
   description: string
 }
 export interface GithubUser {
-  name: string
-  email: string
+  name: unknown
+  email: unknown
   login: string
   id: number
-  node_id: string
-  avatar_url: string
-  gravatar_id: string
-  url: string
-  html_url: string
-  followers_url: string
-  following_url: string
-  gists_url: string
-  starred_url: string
-  subscriptions_url: string
-  organizations_url: string
-  repos_url: string
-  events_url: string
-  received_events_url: string
+  node_id: unknown
+  avatar_url: unknown
+  gravatar_id: unknown
+  url: unknown
+  html_url: unknown
+  followers_url: unknown
+  following_url: unknown
+  gists_url: unknown
+  starred_url: unknown
+  subscriptions_url: unknown
+  organizations_url: unknown
+  repos_url: unknown
+  events_url: unknown
+  received_events_url: unknown
   type: 'Bot' | 'User'
   site_admin: boolean
 }

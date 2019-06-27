@@ -9,6 +9,7 @@ import {
   GithubApiCompare,
   Commit,
   GithubApiCompareCommit,
+  CombinedCommitStatus,
 } from '../github_api_types'
 import { makeContextCache } from './req_cache'
 import { getRequestLogger } from './log'
@@ -103,6 +104,13 @@ export class GithubApi {
     const shaComponent = encodeURIComponent(ref)
     const url = `/repos/elastic/kibana/statuses/${shaComponent}`
     await this.post(url, {}, options)
+  }
+
+  public async getCommitStatus(ref: string) {
+    const shaComponent = encodeURIComponent(ref)
+    const url = `/repos/elastic/kibana/commits/${shaComponent}/status`
+    const resp = await this.get<CombinedCommitStatus>(url, {})
+    return resp.data
   }
 
   public async getPr(prId: number) {

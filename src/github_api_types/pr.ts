@@ -63,12 +63,14 @@ export interface GithubApiPr {
   locked: unknown
   title: string
   user: GithubUser
-  body: unknown
+  body: string
   labels: GithubLabel[]
   milestone: unknown
   active_lock_reason: unknown
-  created_at: unknown
-  updated_at: unknown
+  /** ISO8601 date string */
+  created_at: string
+  /** ISO8601 date string */
+  updated_at: string
   closed_at: unknown
   merged_at: unknown
   merge_commit_sha: unknown
