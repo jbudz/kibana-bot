@@ -20,6 +20,8 @@ const REQUIRED_COMMITS: { [branch: string]: string[] | undefined } = {
   '7.x': ['4334922c220569a97ca4dbd870acf26bef9b5aab'],
 }
 
+const IGNORED_BRANCHES = ['feature/lens', 'feature-integrations-manager']
+
 export const outdated = new PrReactor({
   id: 'outdated',
 
@@ -32,6 +34,38 @@ export const outdated = new PrReactor({
     if (action === 'closed' || pr.closed_at) {
       await clearExpirationTime(es, pr.number)
       return { pr: pr.number, closed: true }
+    }
+
+    if (IGNORED_BRANCHES.includes(pr.base.ref)) {
+      const headStatus = await githubApi.getCommitStatus(pr.head.sha)
+      const outdatedStatus = headStatus.statuses.find(
+        s => s.context === 'prbot:outdated',
+      )
+
+      if (!outdatedStatus) {
+        return {
+          pr: pr.number,
+          ignoredBaseBranch: pr.base.ref,
+        }
+      }
+
+      await clearExpirationTime(es, pr.number)
+
+      if (outdatedStatus.state === 'failure') {
+        return {
+          pr: pr.number,
+          ignoredBaseBranch: pr.base.ref,
+          ...(await applyOutdatedResult({
+            es,
+            githubApi,
+            prNumber: pr.number,
+            prHeadSha: pr.head.sha,
+            prUserLogin: pr.user.login,
+            timeBehind: 0,
+            missingRequiredCommit: false,
+          })),
+        }
+      }
     }
 
     const { totalMissingCommits, missingCommits } = await retryOn404(
