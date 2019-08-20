@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
+import axios, { AxiosInstance, AxiosResponse, AxiosError, Method } from 'axios'
 import parseLinkHeader from 'parse-link-header'
 import throttle from 'lodash.throttle'
 import { getConfigVar } from '@spalger/micro-plus'
@@ -166,7 +166,7 @@ export class GithubApi {
   }
 
   private async req<Result = any>(
-    method: string,
+    method: Method,
     url: string,
     params?: { [key: string]: any },
     body?: { [key: string]: any },

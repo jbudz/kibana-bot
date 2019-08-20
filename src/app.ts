@@ -35,7 +35,9 @@ export function app(log: Log) {
         ctxForResponse.set(req, ctx)
         apm.startTransaction(`${ctx.method} ${ctx.pathname}`)
       },
-      onResponse() {},
+      onResponse() {
+        // noop
+      },
       onError(error) {
         if (error instanceof NotFoundError) {
           return
@@ -47,7 +49,7 @@ export function app(log: Log) {
         const endTime = Date.now()
         const reqTime = endTime - startTimes.get(request)!
         const ctx = ctxForResponse.get(request)
-        let maybeReqLog = ctx ? getRequestLogger(ctx) : log
+        const maybeReqLog = ctx ? getRequestLogger(ctx) : log
 
         maybeReqLog.info(
           `${request.method} ${request.url} - ${response.statusCode} ${reqTime}ms`,
