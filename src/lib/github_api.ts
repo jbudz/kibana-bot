@@ -22,6 +22,10 @@ interface AxiosErrorResp extends AxiosErrorReq {
   response: AxiosResponse
 }
 
+const DEFAULT_RETRY_ON_502_ATTEMPTS = 3
+const sleep = async (ms: number) =>
+  await new Promise(resolve => setTimeout(resolve, ms))
+
 export const isAxiosErrorReq = (error: any): error is AxiosErrorReq =>
   error && error.request
 
@@ -166,6 +170,7 @@ export class GithubApi {
     url: string,
     params?: { [key: string]: any },
     body?: { [key: string]: any },
+    retryOn502Attempts: number = DEFAULT_RETRY_ON_502_ATTEMPTS,
   ): Promise<AxiosResponse<Result>> {
     try {
       const resp = await this.ax({
@@ -197,6 +202,33 @@ export class GithubApi {
             },
           },
         })
+
+        if (error.response.status === 502 && retryOn502Attempts > 0) {
+          const attempt = DEFAULT_RETRY_ON_502_ATTEMPTS - retryOn502Attempts
+          const delay = 2000 * attempt
+
+          this.log.debug('automatically retrying request', {
+            '@type': 'githubApi502Retry',
+            status: error.response.status,
+            delay,
+            retryOn502Attempts,
+            data: {
+              method,
+              url,
+              params,
+              body,
+            },
+          })
+
+          await sleep(delay)
+          return this.req<Result>(
+            method,
+            url,
+            params,
+            body,
+            retryOn502Attempts - 1,
+          )
+        }
       } else if (isAxiosErrorReq(error)) {
         this.log.debug('github api request error', {
           '@type': 'githubApiRequestError',
