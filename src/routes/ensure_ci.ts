@@ -33,25 +33,18 @@ export const ensureCiRoute = new Route(
             const s = status.statuses.find(s => s.context === context)
             return s ? s.state : undefined
           }
-          const getDescription = (context: string) => {
-            const s = status.statuses.find(s => s.context === context)
-            return s ? s.description : undefined
-          }
 
           if (
             getState(CI_CONTEXT) === undefined &&
             !(pr.body.match(SKIP_CI_RE) || pr.title.match(SKIP_CI_RE))
           ) {
-            if (
-              getState(OUR_CONTEXT) !== 'failure' ||
-              getDescription(OUR_CONTEXT) !== MISSING_DESCRIPTION
-            ) {
+            if (getState(OUR_CONTEXT) !== 'success') {
               await githubApi.setCommitStatus(pr.head.sha, {
                 context: OUR_CONTEXT,
-                description: MISSING_DESCRIPTION,
-                state: 'failure',
+                description: 'Deferring to Github branch protection',
+                state: 'success',
               })
-              response.write(`#${pr.number} ci missing\n`)
+              response.write(`#${pr.number} deferred to branch protection\n`)
             } else {
               response.write(`#${pr.number} noop\n`)
             }
