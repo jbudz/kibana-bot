@@ -5,6 +5,7 @@ import { ServerResponse } from 'http'
 const OUR_CONTEXT = 'prbot:missing-ci'
 const CI_CONTEXT = 'kibana-ci'
 const SKIP_CI_RE = /\[skip\W+ci\]/
+const MISSING_DESCRIPTION = 'please hold, CI is a little messed up right now'
 
 export const ensureCiRoute = new Route(
   'GET',
@@ -32,15 +33,22 @@ export const ensureCiRoute = new Route(
             const s = status.statuses.find(s => s.context === context)
             return s ? s.state : undefined
           }
+          const getDescription = (context: string) => {
+            const s = status.statuses.find(s => s.context === context)
+            return s ? s.description : undefined
+          }
 
           if (
             getState(CI_CONTEXT) === undefined &&
             !(pr.body.match(SKIP_CI_RE) || pr.title.match(SKIP_CI_RE))
           ) {
-            if (getState(OUR_CONTEXT) !== 'failure') {
+            if (
+              getState(OUR_CONTEXT) !== 'failure' ||
+              getDescription(OUR_CONTEXT) !== MISSING_DESCRIPTION
+            ) {
               await githubApi.setCommitStatus(pr.head.sha, {
                 context: OUR_CONTEXT,
-                description: 'Make sure to trigger CI manually',
+                description: MISSING_DESCRIPTION,
                 state: 'failure',
               })
               response.write(`#${pr.number} ci missing\n`)
