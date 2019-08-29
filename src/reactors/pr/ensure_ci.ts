@@ -1,4 +1,5 @@
 import { ReactorInput, PrReactor } from './pr_reactor'
+import { GithubApiPullRequestFile } from '../../github_api_types'
 
 const CI_CONTEXT = 'kibana-ci'
 const SKIP_CI_RE = /.*\[skip\W+ci\].*/
@@ -26,15 +27,14 @@ export const ensureCi = new PrReactor({
       }
     }
 
-    const fileNames = (await githubApi.getPrFiles(pr.number)).map(f => ({
-      filename: f.filename,
-      previous_filename: f.previous_filename,
-    }))
+    const files = await githubApi.getPrFiles(pr.number)
 
-    const allFilesInDocs = fileNames.every(
-      f =>
-        f.filename.startsWith('docs/') &&
-        (!f.previous_filename || f.previous_filename.startsWith('docs/')),
+    const fileStartsWith = (f: GithubApiPullRequestFile, startsWith: string) =>
+      f.filename.startsWith(startsWith) &&
+      (!f.previous_filename || f.previous_filename.startsWith(startsWith))
+
+    const allFilesInDocs = files.every(
+      f => fileStartsWith(f, 'docs/') || fileStartsWith(f, 'rfcs/'),
     )
 
     if (allFilesInDocs) {
@@ -51,7 +51,11 @@ export const ensureCi = new PrReactor({
       prTitle: pr.title,
       skipsCi,
       allFilesInDocs,
-      fileNames,
+      fileNames: files.map(f =>
+        f.previous_filename
+          ? `${f.previous_filename} => ${f.filename}`
+          : f.filename,
+      ),
     }
   },
 })
