@@ -11,8 +11,8 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'refresh',
 ]
 
-export const ensureCi = new PrReactor({
-  id: 'ensureCi',
+export const docsOnlyChangeCi = new PrReactor({
+  id: 'docsOnlyChangeCi',
 
   filter: ({ input: { action, pr } }) =>
     pr.state === 'open' && RELEVANT_ACTIONS.includes(action),
@@ -33,15 +33,14 @@ export const ensureCi = new PrReactor({
       f.filename.startsWith(startsWith) &&
       (!f.previous_filename || f.previous_filename.startsWith(startsWith))
 
-    const allFilesInDocs = files.every(
+    const docsOnlyChange = files.every(
       f => fileStartsWith(f, 'docs/') || fileStartsWith(f, 'rfcs/'),
     )
 
-    if (allFilesInDocs) {
+    if (docsOnlyChange) {
       await githubApi.setCommitStatus(pr.head.sha, {
         context: CI_CONTEXT,
-        description:
-          'All files in PR are/were within the `docs` directory, so CI is not required',
+        description: 'Docs only change detected, CI is not required',
         state: 'success',
       })
     }
@@ -50,7 +49,7 @@ export const ensureCi = new PrReactor({
       pr: pr.number,
       prTitle: pr.title,
       skipsCi,
-      allFilesInDocs,
+      docsOnlyChange,
       fileNames: files.map(f =>
         f.previous_filename
           ? `${f.previous_filename} => ${f.filename}`
