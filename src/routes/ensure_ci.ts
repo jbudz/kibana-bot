@@ -5,7 +5,6 @@ import { ServerResponse } from 'http'
 const OUR_CONTEXT = 'prbot:missing-ci'
 const CI_CONTEXT = 'kibana-ci'
 const SKIP_CI_RE = /\[skip\W+ci\]/
-const MISSING_DESCRIPTION = 'please hold, CI is a little messed up right now'
 
 export const ensureCiRoute = new Route(
   'GET',

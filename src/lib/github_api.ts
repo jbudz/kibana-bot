@@ -10,6 +10,7 @@ import {
   Commit,
   GithubApiCompareCommit,
   CombinedCommitStatus,
+  GithubApiPullRequestFiles,
 } from '../github_api_types'
 import { makeContextCache } from './req_cache'
 import { getRequestLogger } from './log'
@@ -121,6 +122,14 @@ export class GithubApi {
     const prIdComponent = encodeURIComponent(`${prId}`)
     const resp = await this.get<GithubApiPr>(
       `/repos/elastic/kibana/pulls/${prIdComponent}`,
+    )
+    return resp.data
+  }
+
+  public async getPrFiles(prId: number) {
+    const prIdComponent = encodeURIComponent(`${prId}`)
+    const resp = await this.get<GithubApiPullRequestFiles>(
+      `/repos/elastic/kibana/pulls/${prIdComponent}/files`,
     )
     return resp.data
   }

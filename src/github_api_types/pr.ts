@@ -83,16 +83,16 @@ export interface GithubApiPr {
   _links: unknown
   author_association: unknown
   draft: boolean
-  merged: unknown
-  mergeable: unknown
-  rebaseable: unknown
+  merged: boolean
+  mergeable: boolean
+  rebaseable: boolean
   mergeable_state: unknown
   merged_by: unknown
-  comments: unknown
-  review_comments: unknown
-  maintainer_can_modify: unknown
-  commits: unknown
-  additions: unknown
-  deletions: unknown
-  changed_files: unknown
+  comments: number
+  review_comments: number
+  maintainer_can_modify: boolean
+  commits: number
+  additions: number
+  deletions: number
+  changed_files: number
 }
