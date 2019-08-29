@@ -4,6 +4,7 @@ import {
   getOldestMissingCommitDate,
   applyOutdatedResult,
   clearExpirationTime,
+  getIsDocsOnlyChange,
 } from '../../../lib'
 
 const RELEVANT_ACTIONS: ReactorInput['action'][] = [
@@ -36,7 +37,15 @@ export const outdated = new PrReactor({
       return { pr: pr.number, closed: true }
     }
 
+    let ignoredBecause: string | undefined
+
     if (IGNORED_BRANCHES.includes(pr.base.ref)) {
+      ignoredBecause = `ignoredBaseBranch: ${pr.base.ref}`
+    } else if (getIsDocsOnlyChange(await githubApi.getPrFiles(pr.number))) {
+      ignoredBecause = `docs only change`
+    }
+
+    if (ignoredBecause) {
       const headStatus = await githubApi.getCommitStatus(pr.head.sha)
       const outdatedStatus = headStatus.statuses.find(
         s => s.context === 'prbot:outdated',
@@ -45,7 +54,7 @@ export const outdated = new PrReactor({
       if (!outdatedStatus) {
         return {
           pr: pr.number,
-          ignoredBaseBranch: pr.base.ref,
+          ignoredBecause,
         }
       }
 
@@ -54,7 +63,7 @@ export const outdated = new PrReactor({
       if (outdatedStatus.state === 'failure') {
         return {
           pr: pr.number,
-          ignoredBaseBranch: pr.base.ref,
+          ignoredBecause,
           ...(await applyOutdatedResult({
             es,
             githubApi,

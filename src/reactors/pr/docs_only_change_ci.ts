@@ -1,5 +1,5 @@
 import { ReactorInput, PrReactor } from './pr_reactor'
-import { GithubApiPullRequestFile } from '../../github_api_types'
+import { getIsDocsOnlyChange } from '../../lib'
 
 const CI_CONTEXT = 'kibana-ci'
 const SKIP_CI_RE = /.*\[skip\W+ci\].*/
@@ -28,16 +28,9 @@ export const docsOnlyChangeCi = new PrReactor({
     }
 
     const files = await githubApi.getPrFiles(pr.number)
+    const isDocsOnlyChange = getIsDocsOnlyChange(files)
 
-    const fileStartsWith = (f: GithubApiPullRequestFile, startsWith: string) =>
-      f.filename.startsWith(startsWith) &&
-      (!f.previous_filename || f.previous_filename.startsWith(startsWith))
-
-    const docsOnlyChange = files.every(
-      f => fileStartsWith(f, 'docs/') || fileStartsWith(f, 'rfcs/'),
-    )
-
-    if (docsOnlyChange) {
+    if (isDocsOnlyChange) {
       await githubApi.setCommitStatus(pr.head.sha, {
         context: CI_CONTEXT,
         description: 'Docs only change detected, CI is not required',
@@ -49,7 +42,7 @@ export const docsOnlyChangeCi = new PrReactor({
       pr: pr.number,
       prTitle: pr.title,
       skipsCi,
-      docsOnlyChange,
+      isDocsOnlyChange,
       fileNames: files.map(f =>
         f.previous_filename
           ? `${f.previous_filename} => ${f.filename}`
