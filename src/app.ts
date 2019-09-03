@@ -11,6 +11,7 @@ import {
   getRequestLogger,
   createRootClient,
   assignEsClient,
+  getRequestId,
 } from './lib'
 import { routes } from './routes'
 import { IncomingMessage } from 'http'
@@ -23,6 +24,8 @@ export function app(log: Log) {
 
   return createMicroHandler({
     onRequest(ctx) {
+      // ensure request id is generated
+      getRequestId(ctx)
       assignRootLogger(ctx, log)
       assignEsClient(ctx, es)
     },
@@ -50,6 +53,10 @@ export function app(log: Log) {
         const reqTime = endTime - startTimes.get(request)!
         const ctx = ctxForResponse.get(request)
         const maybeReqLog = ctx ? getRequestLogger(ctx) : log
+
+        if (ctx) {
+          response.setHeader('X-Request-ID', getRequestId(ctx))
+        }
 
         maybeReqLog.info(
           `${request.method} ${request.url} - ${response.statusCode} ${reqTime}ms`,
