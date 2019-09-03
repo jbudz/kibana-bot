@@ -45,6 +45,8 @@ export const releaseNoteLabels = new PrReactor({
       prTitle: pr.title,
       labelNames,
       missingReleaseNotesLabel,
+      isBasedOnReleaseBranch,
+      isBackport,
     }
   },
 })
