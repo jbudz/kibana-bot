@@ -1,16 +1,12 @@
 import { Route } from '@spalger/micro-plus'
-import {
-  getGithubApi,
-  requireDirectApiPassword,
-  getIsChangeIncludingDocs,
-} from '../lib'
+import { getGithubApi, requireDirectApiPassword } from '../lib'
 import { ServerResponse } from 'http'
 
 const ES_DOCS_CONTEXT = 'elasticsearch-ci/docs'
 
 export const ensureCiRoute = new Route(
   'GET',
-  '/clear_failed_docs_build',
+  '/clear_pending_docs_build',
   requireDirectApiPassword(async ctx => {
     const githubApi = getGithubApi(ctx)
 
@@ -30,24 +26,22 @@ export const ensureCiRoute = new Route(
             return s ? s.state : undefined
           }
 
-          if (getState(ES_DOCS_CONTEXT) !== 'failure') {
-            response.write(`#${pr.number} no failure\n`)
-            continue
+          switch (getState(ES_DOCS_CONTEXT)) {
+            case 'pending':
+            case 'failure':
+              await githubApi.setCommitStatus(pr.head.sha, {
+                context: ES_DOCS_CONTEXT,
+                description: 'This job has been disabled for now',
+                state: 'success',
+              })
+              response.write(`#${pr.number} cleared\n`)
+              continue
+            case 'success':
+              response.write(`#${pr.number} already green\n`)
+              continue
+            default:
+              response.write(`#${pr.number} no status\n`)
           }
-
-          const files = await githubApi.getPrFiles(pr.number)
-          const isChangeIncludingDocs = getIsChangeIncludingDocs(files)
-          if (isChangeIncludingDocs) {
-            response.write(`#${pr.number} includes doc changes\n`)
-            continue
-          }
-
-          await githubApi.setCommitStatus(pr.head.sha, {
-            context: ES_DOCS_CONTEXT,
-            description: 'No docs changes in this PR, so force success',
-            state: 'success',
-          })
-          response.write(`#${pr.number} cleared failure\n`)
         }
 
         response.end()
