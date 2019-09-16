@@ -64,14 +64,12 @@ export async function applyOutdatedResult({
    * Record commit status
    */
   const state = success ? ('success' as const) : ('failure' as const)
-  const update = `run \`node scripts/update_prs ${prNumber}\` to update`
-  const reason =
-    (timeBehind > TIME_LIMIT ? `, > 48h old` : '') +
-    (missingRequiredCommit ? `, missing required commit` : '')
+  const update = `comment \`@elasticmachine merge upstream\` to update`
+  const reason = missingRequiredCommit ? `, missing required commit` : ''
   const commitStatus = {
     context: 'prbot:outdated',
     state,
-    description: update + reason,
+    description: state === 'success' ? '' : update + reason,
   }
 
   await recordCommitStatus(es, prNumber, prHeadSha, commitStatus)
