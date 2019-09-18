@@ -14,9 +14,6 @@ import {
   GithubApiCompareCommit,
   CombinedCommitStatus,
   GithubApiPullRequestFiles,
-  SearchResults,
-  PrSearchResult,
-  PrCommit,
 } from '../github_api_types'
 import { makeContextCache } from './req_cache'
 import { getRequestLogger } from './log'
