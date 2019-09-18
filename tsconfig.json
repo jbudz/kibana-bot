@@ -5,13 +5,16 @@
     "allowJs": false,
     "moduleResolution": "node",
     "lib": [
-      "es2017"
+      "esnext"
+    ],
+    "types": [
+      "node"
     ],
     "module": "commonjs",
-    "target": "es2017",
+    "target": "esnext",
     "esModuleInterop": true
   },
   "include": [
-    "src/app.ts"
+    "src/**/*"
   ]
 }

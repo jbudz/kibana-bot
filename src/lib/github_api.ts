@@ -1,6 +1,5 @@
 import Axios, { AxiosResponse, AxiosError, Method } from 'axios'
 import parseLinkHeader from 'parse-link-header'
-import throttle from 'lodash.throttle'
 import { getConfigVar } from '@spalger/micro-plus'
 import gql from 'graphql-tag'
 import { print } from 'graphql/language/printer'
@@ -26,6 +25,7 @@ interface AxiosErrorResp extends AxiosErrorReq {
   response: AxiosResponse
 }
 
+const RATE_LIMIT_THROTTLE_MS = 10 * 1000
 const DEFAULT_RETRY_ON_502_ATTEMPTS = 3
 const sleep = async (ms: number) =>
   await new Promise(resolve => setTimeout(resolve, ms))
@@ -60,11 +60,6 @@ export class GithubApi {
       Accept: 'application/vnd.github.shadow-cat-preview',
     },
   })
-
-  private readonly throttledLogRateLimitInfo = throttle(
-    (a: number, b: number) => this.logRateLimitInfo(a, b),
-    10 * 1000,
-  )
 
   public constructor(
     private readonly log: Log,
@@ -248,7 +243,10 @@ export class GithubApi {
     }
   }
 
-  private async gql<T>(query: ASTNode, variables: Record<string, any>) {
+  public async gql<T extends object>(
+    query: ASTNode,
+    variables: Record<string, any>,
+  ) {
     const resp = await this.ax.request<{ data: T }>({
       url: 'https://api.github.com/graphql',
       method: 'POST',
@@ -260,6 +258,8 @@ export class GithubApi {
         variables,
       },
     })
+
+    this.checkForGqlRateLimitInfo(resp.data.data)
 
     return resp.data.data
   }
@@ -351,10 +351,25 @@ export class GithubApi {
       resp.headers['x-ratelimit-limit'] &&
       resp.headers['x-ratelimit-remaining']
     ) {
-      this.throttledLogRateLimitInfo(
+      this.logRateLimitInfo(
         Number.parseFloat(resp.headers['x-ratelimit-remaining']),
         Number.parseFloat(resp.headers['x-ratelimit-limit']),
       )
+    }
+  }
+
+  private checkForGqlRateLimitInfo(resp: {
+    rateLimit?: {
+      limit?: number
+      remaining?: number
+    }
+  }) {
+    if (
+      resp.rateLimit &&
+      resp.rateLimit.limit !== undefined &&
+      resp.rateLimit.remaining !== undefined
+    ) {
+      this.logRateLimitInfo(resp.rateLimit.remaining, resp.rateLimit.limit)
     }
   }
 
@@ -373,7 +388,31 @@ export class GithubApi {
     return this.req<Result>('post', url, params, body)
   }
 
+  private rateLimitLogThrottled?: {
+    timer: NodeJS.Timer
+    nextArgs?: [number, number]
+  }
+
   private logRateLimitInfo(remaining: number, total: number) {
+    if (this.rateLimitLogThrottled) {
+      this.rateLimitLogThrottled.nextArgs = [remaining, total]
+      return
+    }
+
+    this.rateLimitLogThrottled = {
+      timer: setTimeout(() => {
+        const { nextArgs } = this.rateLimitLogThrottled!
+        this.rateLimitLogThrottled = undefined
+
+        if (nextArgs) {
+          this.logRateLimitInfo(...nextArgs)
+        }
+      }, RATE_LIMIT_THROTTLE_MS),
+    }
+
+    // don't keep the process open just to log rate limit
+    this.rateLimitLogThrottled.timer.unref()
+
     this.log.info(`rate limit ${remaining}/${total}`, {
       type: 'githubRateLimit',
       rateLimit: {

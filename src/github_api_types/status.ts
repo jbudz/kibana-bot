@@ -2,6 +2,7 @@ import { GithubRepo } from './repo'
 import { GithubUser } from './user'
 
 export type StatusState = 'error' | 'failure' | 'pending' | 'success'
+export type GQLStatusState = 'ERROR' | 'FAILURE' | 'PENDING' | 'SUCCESS'
 
 export interface CombinedCommitStatus {
   state: StatusState

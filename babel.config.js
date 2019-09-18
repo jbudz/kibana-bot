@@ -9,6 +9,8 @@ module.exports = {
         targets: {
           node: 'current',
         },
+        useBuiltIns: 'entry',
+        corejs: { version: 3 },
       },
     ],
   ],
