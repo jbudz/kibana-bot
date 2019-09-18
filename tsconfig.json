@@ -7,9 +7,6 @@
     "lib": [
       "esnext"
     ],
-    "types": [
-      "node"
-    ],
     "module": "commonjs",
     "target": "esnext",
     "esModuleInterop": true
