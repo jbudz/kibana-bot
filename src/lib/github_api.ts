@@ -1,4 +1,4 @@
-import Axios, { AxiosResponse, AxiosError, Method } from 'Axios'
+import Axios, { AxiosResponse, AxiosError, Method } from 'axios'
 import parseLinkHeader from 'parse-link-header'
 import throttle from 'lodash.throttle'
 import { getConfigVar } from '@spalger/micro-plus'
