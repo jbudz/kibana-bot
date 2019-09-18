@@ -1,17 +1,28 @@
 import { GithubApiPullRequestFile } from '../github_api_types'
 
-const fileStartsWith = (f: GithubApiPullRequestFile, startsWith: string) =>
-  f.filename.startsWith(startsWith) &&
-  (!f.previous_filename || f.previous_filename.startsWith(startsWith))
+const fileStartsWith = (
+  f: string | GithubApiPullRequestFile,
+  startsWith: string,
+) =>
+  typeof f === 'string'
+    ? f.startsWith(startsWith)
+    : f.filename.startsWith(startsWith) &&
+      (!f.previous_filename || f.previous_filename.startsWith(startsWith))
 
-const isDocs = (f: GithubApiPullRequestFile) => fileStartsWith(f, 'docs/')
+const isDocs = (f: string | GithubApiPullRequestFile) =>
+  fileStartsWith(f, 'docs/')
 
-const isRfc = (f: GithubApiPullRequestFile) => fileStartsWith(f, 'rfcs/')
+const isRfc = (f: string | GithubApiPullRequestFile) =>
+  fileStartsWith(f, 'rfcs/')
 
-export function getIsDocsOnlyChange(files: GithubApiPullRequestFile[]) {
+export function getIsDocsOnlyChange(
+  files: (string | GithubApiPullRequestFile)[],
+) {
   return files.every(f => isDocs(f) || isRfc(f))
 }
 
-export function getIsChangeIncludingDocs(files: GithubApiPullRequestFile[]) {
+export function getIsChangeIncludingDocs(
+  files: (string | GithubApiPullRequestFile)[],
+) {
   return files.some(isDocs)
 }

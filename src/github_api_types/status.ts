@@ -24,7 +24,7 @@ export interface CombinedCommitStatus {
   url: unknown
 }
 
-export interface CommitStatusWebhook {
+export interface GithubWebhookCommitStatus {
   id: number
   sha: string
   name: unknown
@@ -54,7 +54,14 @@ export interface CommitStatusWebhook {
     committer: GithubUser
     parents: unknown[]
   }
-  branches: unknown[]
+  branches: Array<{
+    name: string
+    commit: {
+      sha: string
+      url: string
+    }
+    protected: boolean
+  }>
   created_at: unknown
   updated_at: unknown
   repository: GithubRepo

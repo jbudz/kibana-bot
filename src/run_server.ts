@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-
 import micro from 'micro'
 
 import { log } from './lib'

@@ -26,7 +26,8 @@ export const log = winston.createLogger({
     winston.format.json(),
   ),
   transports: [
-    ...(process.env.NODE_ENV === 'development'
+    ...(process.env.NODE_ENV === 'development' ||
+    process.env.NODE_ENV === 'test'
       ? [
           new winston.transports.Console({
             format: winston.format.combine(

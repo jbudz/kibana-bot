@@ -1,7 +1,10 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError, Method } from 'axios'
+import Axios, { AxiosResponse, AxiosError, Method } from 'Axios'
 import parseLinkHeader from 'parse-link-header'
 import throttle from 'lodash.throttle'
 import { getConfigVar } from '@spalger/micro-plus'
+import gql from 'graphql-tag'
+import { print } from 'graphql/language/printer'
+import { ASTNode } from 'graphql/language/ast'
 
 import { Log } from '../lib'
 import {
@@ -11,6 +14,9 @@ import {
   GithubApiCompareCommit,
   CombinedCommitStatus,
   GithubApiPullRequestFiles,
+  SearchResults,
+  PrSearchResult,
+  PrCommit,
 } from '../github_api_types'
 import { makeContextCache } from './req_cache'
 import { getRequestLogger } from './log'
@@ -49,22 +55,24 @@ const getCommitDate = (commit: Commit) => {
 }
 
 export class GithubApi {
-  private readonly ax: AxiosInstance
+  private readonly ax = Axios.create({
+    baseURL: 'https://api.github.com/',
+    headers: {
+      'User-Agent': 'spalger/kibana-pr-bot',
+      Authorization: `token ${this.secret}`,
+      Accept: 'application/vnd.github.shadow-cat-preview',
+    },
+  })
+
   private readonly throttledLogRateLimitInfo = throttle(
     (a: number, b: number) => this.logRateLimitInfo(a, b),
     10 * 1000,
   )
 
-  public constructor(private log: Log, secret: string) {
-    this.ax = axios.create({
-      baseURL: 'https://api.github.com/',
-      headers: {
-        'User-Agent': 'spalger/kibana-pr-bot',
-        Authorization: `token ${secret}`,
-        Accept: 'application/vnd.github.shadow-cat-preview',
-      },
-    })
-  }
+  public constructor(
+    private readonly log: Log,
+    private readonly secret: string,
+  ) {}
 
   public async compare(
     headRef: string,
@@ -126,6 +134,75 @@ export class GithubApi {
     return resp.data
   }
 
+  public async getPrsAndFiles(
+    commitSha: string,
+    state: 'open' | 'closed' = 'open',
+  ) {
+    type ResponseType = {
+      search: {
+        nodes: Array<{
+          __typename: 'PullRequest'
+          number: number
+          commits: {
+            nodes: Array<{
+              commit: {
+                oid: string
+              }
+            }>
+          }
+          files: {
+            nodes: Array<{
+              path: string
+            }>
+            pageInfo: {
+              hasNextPage: boolean
+            }
+          }
+        }>
+      }
+    }
+
+    const resp = await this.gql<ResponseType>(
+      gql`
+        query($query: String!) {
+          search(first: 100, query: $query, type: ISSUE) {
+            nodes {
+              __typename
+              ... on PullRequest {
+                number
+                commits(last: 1) {
+                  nodes {
+                    commit {
+                      oid
+                    }
+                  }
+                }
+                files(first: 100) {
+                  nodes {
+                    path
+                  }
+                  pageInfo {
+                    hasNextPage
+                  }
+                }
+              }
+            }
+          }
+        }
+      `,
+      {
+        query: `${commitSha} state:${state}`,
+      },
+    )
+
+    return resp.search.nodes.map(n => ({
+      id: n.number,
+      lastCommitSha: n.commits.nodes.map(nn => nn.commit.oid).shift(),
+      hasMoreFiles: n.files.pageInfo.hasNextPage,
+      files: n.files.nodes.map(nn => nn.path),
+    }))
+  }
+
   public async getPrFiles(prId: number) {
     const prIdComponent = encodeURIComponent(`${prId}`)
     const resp = await this.get<GithubApiPullRequestFiles>(
@@ -172,6 +249,22 @@ export class GithubApi {
         urls.push(links.next.url)
       }
     }
+  }
+
+  private async gql<T>(query: ASTNode, variables: Record<string, any>) {
+    const resp = await this.ax.request<{ data: T }>({
+      url: 'https://api.github.com/graphql',
+      method: 'POST',
+      headers: {
+        Authorization: `bearer ${this.secret}`,
+      },
+      data: {
+        query: print(query),
+        variables,
+      },
+    })
+
+    return resp.data.data
   }
 
   private async req<Result = any>(
