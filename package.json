@@ -4,7 +4,7 @@
   "license": "Apache 2.0",
   "main": "dist/run_server.js",
   "scripts": {
-    "build": "babel src -d dist --delete-dir-on-start -x .ts --source-maps",
+    "build": "babel src -d dist --delete-dir-on-start -x .ts --ignore **/*.test.ts --source-maps",
     "type_check": "tsc --noEmit",
     "lint": "yarn eslint . --ext .ts,.js",
     "test": "yarn type_check && yarn lint && yarn jest"
