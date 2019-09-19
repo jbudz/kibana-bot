@@ -4,6 +4,7 @@ import { getConfigVar } from '@spalger/micro-plus'
 
 import { CliError } from './errors'
 import { runPrintDocStatusCommand } from './commands/print_doc_status'
+import { runPrintBaseBranchesCommand } from './commands/print_base_branches'
 import { runRefreshCommand } from './commands/refresh'
 import { runRefreshAllCommand } from './commands/refresh_all'
 import { log, GithubApi, createRootClient } from '../lib'
@@ -17,7 +18,8 @@ CLI to run tasks on Kibana PRs
     help                     show this message
     print_doc_status         print the docs job status of each PR
     refresh [pr] [reactor]   run a specific reactor against a specific pr
-    refresh_all [reactor]   run a specific reactor against all open prs
+    refresh_all [reactor]    run a specific reactor against all open prs
+    print_base_branches      print the base branch of all open prs
 `
 
 export async function main() {
@@ -41,6 +43,12 @@ export async function main() {
       case 'print_doc_status': {
         const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
         await runPrintDocStatusCommand(githubApi)
+        return
+      }
+
+      case 'print_base_branches': {
+        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        await runPrintBaseBranchesCommand(githubApi)
         return
       }
 

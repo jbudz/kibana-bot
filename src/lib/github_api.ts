@@ -66,16 +66,16 @@ export class GithubApi {
     private readonly secret: string,
   ) {}
 
-  public async compare(
-    headRef: string,
-    baseRef: string,
+  public async getMissingCommits(
+    refToStartFrom: string,
+    refWithNewCommits: string,
   ): Promise<{
     totalMissingCommits: number
     missingCommits: GithubApiCompareCommit[]
   }> {
-    const headComponent = encodeURIComponent(headRef)
-    const baseComponent = encodeURIComponent(baseRef)
-    const url = `/repos/elastic/kibana/compare/${headComponent}...${baseComponent}`
+    const startComponent = encodeURIComponent(refToStartFrom)
+    const newCommitsComponent = encodeURIComponent(refWithNewCommits)
+    const url = `/repos/elastic/kibana/compare/${startComponent}...${newCommitsComponent}`
 
     const resp = await this.get<GithubApiCompare>(url)
 

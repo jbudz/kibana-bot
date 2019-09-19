@@ -1,11 +1,11 @@
-import { ReactorInput, PrReactor } from '../pr_reactor'
-import { retryOn404 } from './retry_on_404'
+import { ReactorInput, PrReactor } from './pr_reactor'
 import {
   getOldestMissingCommitDate,
   applyOutdatedResult,
   clearExpirationTime,
   getIsDocsOnlyChange,
-} from '../../../lib'
+  retryOn404,
+} from '../../lib'
 
 const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'opened',
@@ -15,11 +15,6 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'refresh',
   'closed',
 ]
-
-const REQUIRED_COMMITS: { [branch: string]: string[] | undefined } = {
-  master: ['48c5df2e98fcf0eb9d08a4fae3bc4a36cb1ca78f'],
-  '7.x': ['4334922c220569a97ca4dbd870acf26bef9b5aab'],
-}
 
 const IGNORED_BRANCHES = ['feature/lens', 'feature-integrations-manager']
 
@@ -79,17 +74,12 @@ export const outdated = new PrReactor({
 
     const { totalMissingCommits, missingCommits } = await retryOn404(
       log,
-      async () => await githubApi.compare(pr.head.sha, pr.base.label),
+      async () => await githubApi.getMissingCommits(pr.head.sha, pr.base.label),
     )
 
     let timeBehind = 0,
       oldestMissingCommitDate,
       oldestMissingCommitCommiterDate
-
-    const requiredCommits = REQUIRED_COMMITS[pr.base.ref] || []
-    const missingRequiredCommits = missingCommits.filter(c =>
-      requiredCommits.includes(c.sha),
-    ).length
 
     if (totalMissingCommits > 0) {
       const oldestMissingCommit = missingCommits[0]
@@ -126,7 +116,6 @@ export const outdated = new PrReactor({
         prHeadSha: pr.head.sha,
         prUserLogin: pr.user.login,
         timeBehind,
-        missingRequiredCommit: missingRequiredCommits > 0,
       })),
     }
   },

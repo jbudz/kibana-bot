@@ -1,4 +1,5 @@
-import { isAxiosErrorResp, Log } from '../../../lib'
+import { Log } from './log'
+import { isAxiosErrorResp } from './github_api'
 
 export const retryOn404 = async <T>(log: Log, fn: () => T) => {
   let attempt = 0
