@@ -1,4 +1,4 @@
-import Axios, { AxiosResponse, AxiosError, Method } from 'axios'
+import Axios, { AxiosResponse, Method } from 'axios'
 import parseLinkHeader from 'parse-link-header'
 import { getConfigVar } from '@spalger/micro-plus'
 import gql from 'graphql-tag'
@@ -16,25 +16,12 @@ import {
 } from '../github_api_types'
 import { makeContextCache } from './req_cache'
 import { getRequestLogger } from './log'
-
-interface AxiosErrorReq extends AxiosError {
-  request: any
-}
-
-interface AxiosErrorResp extends AxiosErrorReq {
-  response: AxiosResponse
-}
+import { isAxiosErrorReq, isAxiosErrorResp } from './axios_errors'
 
 const RATE_LIMIT_THROTTLE_MS = 10 * 1000
 const DEFAULT_RETRY_ON_502_ATTEMPTS = 3
 const sleep = async (ms: number) =>
   await new Promise(resolve => setTimeout(resolve, ms))
-
-export const isAxiosErrorReq = (error: any): error is AxiosErrorReq =>
-  error && error.request
-
-export const isAxiosErrorResp = (error: any): error is AxiosErrorResp =>
-  error && error.request && error.response
 
 type COMMIT_STATUS_STATE = 'error' | 'pending' | 'success' | 'failure'
 

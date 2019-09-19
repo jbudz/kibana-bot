@@ -1,5 +1,5 @@
 import { ReactorInput, PrReactor } from './pr_reactor'
-import { retryOn404 } from '../../lib'
+import { retryOn404, getCommitStatus } from '../../lib'
 
 const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'opened',
@@ -54,7 +54,7 @@ export const badCommits = new PrReactor({
 
   filter: ({ input }) => RELEVANT_ACTIONS.includes(input.action),
 
-  async exec({ githubApi, input: { pr }, log }) {
+  async exec({ slackApi, githubApi, input: { pr }, log }) {
     const brokeZones = PR_BROKE_ZONES.filter(z =>
       z.branches.includes(pr.base.ref),
     )
@@ -79,16 +79,16 @@ export const badCommits = new PrReactor({
 
     const results = []
 
-    for (const { name, start, stop } of brokeZones) {
+    for (const brokeZone of brokeZones) {
       const { totalMissingCommits: commitsBehindStop } = await retryOn404(
         log,
-        async () => await githubApi.getMissingCommits(pr.head.sha, stop),
+        async () =>
+          await githubApi.getMissingCommits(pr.head.sha, brokeZone.stop),
       )
 
       if (commitsBehindStop === 0) {
         results.push({
-          start,
-          stop,
+          brokeZone,
           commitsBehindStop,
         })
         continue
@@ -96,12 +96,12 @@ export const badCommits = new PrReactor({
 
       const { totalMissingCommits: commitsBehindStart } = await retryOn404(
         log,
-        async () => await githubApi.getMissingCommits(pr.head.sha, start),
+        async () =>
+          await githubApi.getMissingCommits(pr.head.sha, brokeZone.start),
       )
 
       results.push({
-        start,
-        stop,
+        brokeZone,
         commitsBehindStop,
         commitsBehindStart,
       })
@@ -110,10 +110,10 @@ export const badCommits = new PrReactor({
         continue
       }
 
-      log.warn(`#${pr.number} is in the "broke zone" [${name}]`, {
+      log.warn(`#${pr.number} is in the "broke zone" [${brokeZone.name}]`, {
         '@type': 'prInBrokeZone',
         data: {
-          name,
+          brokeZone,
           commitsBehindStart,
           commitsBehindStop,
           prId: pr.number,
@@ -121,11 +121,24 @@ export const badCommits = new PrReactor({
         },
       })
 
+      const currentStatus = getCommitStatus(
+        await githubApi.getCommitStatus(pr.head.sha),
+        STATUS_CONTEXT,
+      )
+
+      if (currentStatus === 'failure') {
+        continue
+      }
+
       await githubApi.setCommitStatus(pr.head.sha, {
         context: STATUS_CONTEXT,
         state: 'failure',
         description: 'please merge upstream now',
       })
+
+      await slackApi.pingAtHere(
+        `PR has bad commits from [${brokeZone.name}] https://github.com/elastic/kibana/pull/${pr.number}`,
+      )
     }
 
     return {

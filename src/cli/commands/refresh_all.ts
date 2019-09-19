@@ -1,6 +1,6 @@
 import Elasticsearch from '@elastic/elasticsearch'
 import { runReactors, prReactors } from '../../reactors'
-import { Log, GithubApi } from '../../lib'
+import { Log, GithubApi, SlackApi } from '../../lib'
 import { CliError } from '../errors'
 
 export async function runRefreshAllCommand(
@@ -8,6 +8,7 @@ export async function runRefreshAllCommand(
   log: Log,
   es: Elasticsearch.Client,
   githubApi: GithubApi,
+  slackApi: SlackApi,
 ) {
   const reactor = prReactors.find(reactor => reactor.id === reactorId)
   if (!reactor) {
@@ -20,6 +21,7 @@ export async function runRefreshAllCommand(
       await runReactors([reactor], {
         context: {
           githubApi,
+          slackApi,
           log,
           es,
           input: {

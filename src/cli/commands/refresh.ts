@@ -1,6 +1,6 @@
 import Elasticsearch from '@elastic/elasticsearch'
 
-import { Log, GithubApi } from '../../lib'
+import { Log, GithubApi, SlackApi } from '../../lib'
 import { runReactors, prReactors } from '../../reactors'
 import { CliError } from '../errors'
 
@@ -10,6 +10,7 @@ export async function runRefreshCommand(
   log: Log,
   es: Elasticsearch.Client,
   githubApi: GithubApi,
+  slackApi: SlackApi,
 ) {
   if (!prId) {
     throw new CliError('missing pr id', { showHelp: true })
@@ -34,6 +35,7 @@ export async function runRefreshCommand(
         githubApi,
         log,
         es,
+        slackApi,
       },
     },
   )
