@@ -1,5 +1,5 @@
 import { ReactorInput, PrReactor } from './pr_reactor'
-import { getIsDocsOnlyChange } from '../../lib'
+import { getIsDocsOnlyChange, retryOn404 } from '../../lib'
 
 const CI_CONTEXT = 'kibana-ci'
 const SKIP_CI_RE = /.*\[skip\W+ci\].*/
@@ -17,7 +17,7 @@ export const docsOnlyChangeCi = new PrReactor({
   filter: ({ input: { action, pr } }) =>
     pr.state === 'open' && RELEVANT_ACTIONS.includes(action),
 
-  async exec({ input: { pr }, githubApi }) {
+  async exec({ input: { pr }, githubApi, log }) {
     const skipsCi = SKIP_CI_RE.test(pr.title) || SKIP_CI_RE.test(pr.body)
     if (!skipsCi) {
       return {
@@ -27,7 +27,7 @@ export const docsOnlyChangeCi = new PrReactor({
       }
     }
 
-    const files = await githubApi.getPrFiles(pr.number)
+    const files = await retryOn404(log, () => githubApi.getPrFiles(pr.number))
     const isDocsOnlyChange = getIsDocsOnlyChange(files)
 
     if (isDocsOnlyChange) {

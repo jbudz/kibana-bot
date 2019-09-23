@@ -36,7 +36,11 @@ export const outdated = new PrReactor({
 
     if (IGNORED_BRANCHES.includes(pr.base.ref)) {
       ignoredBecause = `ignoredBaseBranch: ${pr.base.ref}`
-    } else if (getIsDocsOnlyChange(await githubApi.getPrFiles(pr.number))) {
+    } else if (
+      getIsDocsOnlyChange(
+        await retryOn404(log, () => githubApi.getPrFiles(pr.number)),
+      )
+    ) {
       ignoredBecause = `docs only change`
     }
 
