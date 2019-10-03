@@ -1,6 +1,6 @@
 import { GithubWebhookCommitStatus } from '../../github_api_types'
 import { Reactor } from '../reactor'
-import { RELEASE_BRANCH_RE, getIsChangeIncludingDocs } from '../../lib'
+import { RELEASE_BRANCH_RE, getIncludesDocsSiteChanges } from '../../lib'
 
 const ES_DOCS_CONTEXT = 'elasticsearch-ci/docs'
 
@@ -25,7 +25,7 @@ export const invalidateDocFailures = new Reactor<GithubWebhookCommitStatus>({
         continue
       }
 
-      if (!pr.hasMoreFiles && !getIsChangeIncludingDocs(pr.files)) {
+      if (!pr.hasMoreFiles && !getIncludesDocsSiteChanges(pr.files)) {
         isPrNotIncludingDocs.push(pr.id)
         continue
       }
