@@ -32,75 +32,110 @@ function slackEscape(msg: string) {
 export class SlackApi {
   basicAuth =
     'basic ' +
-    Buffer.from(
-      `${getConfigVar('SLACK_CLIENT_ID')}:${getConfigVar(
-        'SLACK_CLIENT_SECRET',
-      )}`,
-      'utf8',
-    ).toString('base64')
+    Buffer.from(`${this.clientId}:${this.clientSecret}`, 'utf8').toString(
+      'base64',
+    )
 
-  x = Axios.create({
-    baseURL: 'https://slack.com/api/',
-  })
+  constructor(
+    private readonly log: Log,
+    private readonly clientId: string,
+    private readonly clientSecret: string,
+  ) {}
 
-  constructor(private readonly log: Log, private readonly webhookUrl: string) {}
-
-  public async pingAtHere(msg: string) {
-    await this.send(`<!here|here> ${slackEscape(msg)}`)
-  }
+  // public async pingAtHere(msg: string) {
+  //   await this.send(`<!here|here> ${slackEscape(msg)}`)
+  // }
 
   public async finishOauth(code: string, redirectUri?: string) {
-    return await Axios.request<any>({
-      url: 'oauth.access',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: this.basicAuth,
-      },
-      data: QueryString.stringify({
-        code,
-        redirect_uri: redirectUri,
-        single_channel: false,
-      }),
+    const formData = QueryString.stringify({
+      code,
+      ...(redirectUri ? { redirect_uri: redirectUri } : {}),
+      single_channel: false,
     })
-  }
 
-  private async send(escapedText: string) {
+    this.log.info('finishing slack oauth', {
+      '@type': 'slackOauthComplete',
+      data: {
+        code,
+        redirectUri,
+        formData,
+      },
+    })
+
     try {
-      await Axios.request({
-        url: this.webhookUrl,
+      return await Axios.request<any>({
+        url: 'https://slack.com/api/oauth.access',
         method: 'POST',
-        data: {
-          text: escapedText,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: this.basicAuth,
         },
+        data: formData,
       })
     } catch (error) {
       if (isAxiosErrorResp(error)) {
-        this.log.error('slack error response', {
-          '@type': 'slackWebhookFailure',
+        this.log.error('failed to finish slack oauth', {
+          '@type': 'slackOauthComplete-FailureResponse',
           data: {
-            msg: escapedText,
+            config: error.config,
             status: error.response.status,
             headers: error.response.headers,
             resp: error.response.data,
           },
         })
-        return
+      } else {
+        this.log.error('failed to send request to slack', {
+          '@type': 'slackOauthComplete-RequestFailure',
+          data: {
+            error: error.stack || error.message || error,
+          },
+        })
       }
 
-      this.log.error('failed to send request to slack', {
-        '@type': 'slackWebhookFailure',
-        data: {
-          msg: escapedText,
-          error: error.stack || error.message || error,
-        },
-      })
+      throw error
     }
   }
+
+  // private async send(escapedText: string) {
+  //   try {
+  //     await Axios.request({
+  //       url: this.webhookUrl,
+  //       method: 'POST',
+  //       data: {
+  //         text: escapedText,
+  //       },
+  //     })
+  //   } catch (error) {
+  //     if (isAxiosErrorResp(error)) {
+  //       this.log.error('slack error response', {
+  //         '@type': 'slackWebhookFailure',
+  //         data: {
+  //           msg: escapedText,
+  //           status: error.response.status,
+  //           headers: error.response.headers,
+  //           resp: error.response.data,
+  //         },
+  //       })
+  //       return
+  //     }
+
+  //     this.log.error('failed to send request to slack', {
+  //       '@type': 'slackWebhookFailure',
+  //       data: {
+  //         msg: escapedText,
+  //         error: error.stack || error.message || error,
+  //       },
+  //     })
+  //   }
+  // }
 }
 
 const slackApiCache = makeContextCache('github api', ctx => {
-  return new SlackApi(getRequestLogger(ctx), getConfigVar('SLACK_WEBHOOK_URL'))
+  return new SlackApi(
+    getRequestLogger(ctx),
+    getConfigVar('SLACK_CLIENT_ID'),
+    getConfigVar('SLACK_CLIENT_SECRET'),
+  )
 })
 
 export const getSlackApi = slackApiCache.get
