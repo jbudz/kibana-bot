@@ -9,7 +9,20 @@ interface AxiosErrorResp extends AxiosErrorReq {
 }
 
 export const isAxiosErrorReq = (error: any): error is AxiosErrorReq =>
-  error && error.request
+  error && error.isAxiosError && error.request
 
 export const isAxiosErrorResp = (error: any): error is AxiosErrorResp =>
-  error && error.request && error.response
+  error && error.isAxiosError && error.request && error.response
+
+export const createAxiosErrorResp = (resp: AxiosResponse, message?: string) => {
+  const error: Partial<AxiosErrorResp> = new Error(
+    message || `Response failure created with status code ${resp.status}`,
+  )
+
+  error.config = resp.config
+  error.isAxiosError = true
+  error.request = resp.request
+  error.response = resp
+
+  return error as AxiosErrorResp
+}

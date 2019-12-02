@@ -1,11 +1,14 @@
 import QueryString from 'querystring'
+import Iron from '@hapi/iron'
+import { Client } from '@elastic/elasticsearch'
 
 import Axios from 'axios'
 import { getConfigVar } from '@spalger/micro-plus'
 
 import { Log, getRequestLogger } from './log'
 import { makeContextCache } from './req_cache'
-import { isAxiosErrorResp } from './axios_errors'
+import { isAxiosErrorResp, createAxiosErrorResp } from './axios_errors'
+import { getEsClient } from './es'
 
 /**
  * required escaping per slack api docs
@@ -30,21 +33,39 @@ function slackEscape(msg: string) {
 }
 
 export class SlackApi {
-  basicAuth =
-    'basic ' +
-    Buffer.from(`${this.clientId}:${this.clientSecret}`, 'utf8').toString(
-      'base64',
-    )
+  private readonly credsIndex: string
+  private readonly basicAuth: string
+  private readonly encrypt: (data: unknown) => Promise<string>
+  private readonly decrypt: <T = unknown>(data: string) => Promise<T>
 
   constructor(
     private readonly log: Log,
-    private readonly clientId: string,
-    private readonly clientSecret: string,
-  ) {}
+    private readonly es: Client,
+    config: {
+      credsIndex: string
+      clientId: string
+      clientSecret: string
+      credsPassword: {
+        readonly id: string
+        readonly secret: string
+      }
+    },
+  ) {
+    this.credsIndex = config.credsIndex
 
-  // public async pingAtHere(msg: string) {
-  //   await this.send(`<!here|here> ${slackEscape(msg)}`)
-  // }
+    this.basicAuth =
+      'basic ' +
+      Buffer.from(`${config.clientId}:${config.clientSecret}`, 'utf8').toString(
+        'base64',
+      )
+
+    this.encrypt = async (data: unknown) => {
+      return await Iron.seal(data, config.credsPassword, Iron.defaults)
+    }
+    this.decrypt = async (sealed: string) => {
+      return await Iron.unseal(sealed, config.credsPassword, Iron.defaults)
+    }
+  }
 
   public async finishOauth(code: string, redirectUri?: string) {
     const formData = QueryString.stringify({
@@ -62,8 +83,29 @@ export class SlackApi {
       },
     })
 
+    let response
     try {
-      return await Axios.request<any>({
+      response = await Axios.request<
+        | {
+            ok: false
+            error: string
+          }
+        | {
+            ok: true
+            access_token: string
+            scope: string
+            user_id: string
+            team_id: string
+            enterprise_id?: string
+            team_name: string
+            incoming_webhook: {
+              channel: string
+              channel_id: string
+              configuration_url: string
+              url: string
+            }
+          }
+      >({
         url: 'https://slack.com/api/oauth.access',
         method: 'POST',
         headers: {
@@ -72,6 +114,10 @@ export class SlackApi {
         },
         data: formData,
       })
+
+      if (response.data.ok !== true) {
+        throw createAxiosErrorResp(response, response.data.error)
+      }
     } catch (error) {
       if (isAxiosErrorResp(error)) {
         this.log.error('failed to finish slack oauth', {
@@ -94,48 +140,27 @@ export class SlackApi {
 
       throw error
     }
+
+    await this.es.index({
+      index: this.credsIndex,
+      id: response.data.team_name,
+      body: {
+        created_at: new Date(),
+        payload: await this.encrypt(response.data),
+      },
+    })
+
+    return response.data
   }
-
-  // private async send(escapedText: string) {
-  //   try {
-  //     await Axios.request({
-  //       url: this.webhookUrl,
-  //       method: 'POST',
-  //       data: {
-  //         text: escapedText,
-  //       },
-  //     })
-  //   } catch (error) {
-  //     if (isAxiosErrorResp(error)) {
-  //       this.log.error('slack error response', {
-  //         '@type': 'slackWebhookFailure',
-  //         data: {
-  //           msg: escapedText,
-  //           status: error.response.status,
-  //           headers: error.response.headers,
-  //           resp: error.response.data,
-  //         },
-  //       })
-  //       return
-  //     }
-
-  //     this.log.error('failed to send request to slack', {
-  //       '@type': 'slackWebhookFailure',
-  //       data: {
-  //         msg: escapedText,
-  //         error: error.stack || error.message || error,
-  //       },
-  //     })
-  //   }
-  // }
 }
 
 const slackApiCache = makeContextCache('github api', ctx => {
-  return new SlackApi(
-    getRequestLogger(ctx),
-    getConfigVar('SLACK_CLIENT_ID'),
-    getConfigVar('SLACK_CLIENT_SECRET'),
-  )
+  return new SlackApi(getRequestLogger(ctx), getEsClient(ctx), {
+    credsIndex: getConfigVar('SLACK_CREDS_INDEX'),
+    clientId: getConfigVar('SLACK_CLIENT_ID'),
+    clientSecret: getConfigVar('SLACK_CLIENT_SECRET'),
+    credsPassword: JSON.parse(getConfigVar('SLACK_CREDS_PASSWORD')),
+  })
 })
 
 export const getSlackApi = slackApiCache.get

@@ -6,7 +6,6 @@ export const slackAuthCallbackRoute = new Route(
   'GET',
   '/slack_auth_callback',
   async ctx => {
-    // const es = getEsClient(ctx)
     const slack = getSlackApi(ctx)
     const code = ctx.query['code']
 
@@ -17,13 +16,7 @@ export const slackAuthCallbackRoute = new Route(
     const resp = await slack.finishOauth(code)
 
     return {
-      body: {
-        slack_resp: {
-          data: resp.data,
-          headers: resp.headers,
-          status: resp.status,
-        },
-      },
+      body: resp,
     }
   },
 )
