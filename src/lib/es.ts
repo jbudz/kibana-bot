@@ -100,7 +100,7 @@ export async function* scrollSearch<T = any>(es: Client, params: any) {
     oldScrollIds.add(scrollId)
     scrollId = page.body._scroll_id
 
-    for (const hit of page1.body.hits.hits) {
+    for (const hit of page.body.hits.hits) {
       yield hit
       remaining -= 1
     }
