@@ -5,7 +5,6 @@ import {
   getGithubApi,
   getRequestLogger,
   getEsClient,
-  getSlackApi,
 } from '../lib'
 import {
   GithubWebhookPullRequestEvent,
@@ -43,7 +42,9 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
     queues.set(event, [])
   }
 
-  let run = () => {}
+  let run = () => {
+    // noop
+  }
   const pause = new Promise(resolve => {
     run = resolve
   })
@@ -72,7 +73,6 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
               githubApi,
               log,
               es: getEsClient(ctx),
-              slackApi: getSlackApi(ctx),
             },
           }),
         }
@@ -85,7 +85,6 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
               githubApi,
               log,
               es: getEsClient(ctx),
-              slackApi: getSlackApi(ctx),
             },
           }),
         }
@@ -98,7 +97,6 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
               githubApi,
               log,
               es: getEsClient(ctx),
-              slackApi: getSlackApi(ctx),
             },
           }),
         }

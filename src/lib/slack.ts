@@ -1,3 +1,5 @@
+import QueryString from 'querystring'
+
 import Axios from 'axios'
 import { getConfigVar } from '@spalger/micro-plus'
 
@@ -28,10 +30,39 @@ function slackEscape(msg: string) {
 }
 
 export class SlackApi {
+  basicAuth =
+    'basic ' +
+    Buffer.from(
+      `${getConfigVar('SLACK_CLIENT_ID')}:${getConfigVar(
+        'SLACK_CLIENT_SECRET',
+      )}`,
+      'utf8',
+    ).toString('base64')
+
+  x = Axios.create({
+    baseURL: 'https://slack.com/api/',
+  })
+
   constructor(private readonly log: Log, private readonly webhookUrl: string) {}
 
   public async pingAtHere(msg: string) {
     await this.send(`<!here|here> ${slackEscape(msg)}`)
+  }
+
+  public async finishOauth(code: string, redirectUri?: string) {
+    return await Axios.request<any>({
+      url: 'oauth.access',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: this.basicAuth,
+      },
+      data: QueryString.stringify({
+        code,
+        redirect_uri: redirectUri,
+        single_channel: false,
+      }),
+    })
   }
 
   private async send(escapedText: string) {

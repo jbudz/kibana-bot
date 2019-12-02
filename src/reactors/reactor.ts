@@ -1,13 +1,12 @@
 import { Client } from '@elastic/elasticsearch'
 
-import { SlackApi, GithubApi, Log } from '../lib'
+import { GithubApi, Log } from '../lib'
 
 export interface ReactorContext<I> {
   input: I
   log: Log
   githubApi: GithubApi
   es: Client
-  slackApi: SlackApi
 }
 
 export class Reactor<I> {

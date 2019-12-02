@@ -7,7 +7,7 @@ import { runPrintDocStatusCommand } from './commands/print_doc_status'
 import { runPrintBaseBranchesCommand } from './commands/print_base_branches'
 import { runRefreshCommand } from './commands/refresh'
 import { runRefreshAllCommand } from './commands/refresh_all'
-import { log, GithubApi, createRootClient, SlackApi } from '../lib'
+import { log, GithubApi, createRootClient } from '../lib'
 
 const helpText = `
 node cli [command] [...options]
@@ -56,8 +56,7 @@ export async function main() {
         const [, prId, reactorId] = argv._
         const es = createRootClient(log)
         const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        const slackApi = new SlackApi(log, getConfigVar('SLACK_WEBHOOK_URL'))
-        await runRefreshCommand(prId, reactorId, log, es, githubApi, slackApi)
+        await runRefreshCommand(prId, reactorId, log, es, githubApi)
         return
       }
 
@@ -65,8 +64,7 @@ export async function main() {
         const [, reactorId] = argv._
         const es = createRootClient(log)
         const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        const slackApi = new SlackApi(log, getConfigVar('SLACK_WEBHOOK_URL'))
-        await runRefreshAllCommand(reactorId, log, es, githubApi, slackApi)
+        await runRefreshAllCommand(reactorId, log, es, githubApi)
         return
       }
 

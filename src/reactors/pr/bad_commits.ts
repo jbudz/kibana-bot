@@ -54,7 +54,7 @@ export const badCommits = new PrReactor({
 
   filter: ({ input }) => RELEVANT_ACTIONS.includes(input.action),
 
-  async exec({ slackApi, githubApi, input: { pr }, log }) {
+  async exec({ githubApi, input: { pr }, log }) {
     const brokeZones = PR_BROKE_ZONES.filter(z =>
       z.branches.includes(pr.base.ref),
     )
@@ -135,10 +135,6 @@ export const badCommits = new PrReactor({
         state: 'failure',
         description: 'please merge upstream now',
       })
-
-      await slackApi.pingAtHere(
-        `PR has bad commits from [${brokeZone.name}] https://github.com/elastic/kibana/pull/${pr.number}`,
-      )
     }
 
     return {
