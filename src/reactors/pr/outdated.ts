@@ -16,7 +16,11 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'closed',
 ]
 
-const IGNORED_BRANCHES = ['feature/lens', 'feature-integrations-manager']
+const IGNORED_BRANCHES = [
+  'feature/lens',
+  'feature-integrations-manager',
+  'feature-ingest',
+]
 
 export const outdated = new PrReactor({
   id: 'outdated',
