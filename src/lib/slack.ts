@@ -1,16 +1,17 @@
 import QueryString from 'querystring'
 import Iron from '@hapi/iron'
 import { Client } from '@elastic/elasticsearch'
+import { inspect } from 'util'
 
 import Axios from 'axios'
 import { getConfigVar } from '@spalger/micro-plus'
 
 import { scrollSearch } from './es'
-import { attemptMapAll } from './async_iterators'
+import * as AsyncIter from './async_iterators'
 import { Log, getRequestLogger } from './log'
 import { makeContextCache } from './req_cache'
 import { isAxiosErrorResp, createAxiosErrorResp } from './axios_errors'
-import { getEsClient } from './es'
+import { getEsClient, EsHit } from './es'
 
 /**
  * required escaping per slack api docs
@@ -48,10 +49,10 @@ function isObj(x: any): x is object {
 }
 
 function isString(x: any): x is string {
-  return x && typeof x === 'object'
+  return x && typeof x === 'string'
 }
 
-type CredDoc = {
+type CredSource = {
   created_at: string
   payload: string
 }
@@ -87,7 +88,13 @@ export class SlackApi {
       return await Iron.seal(data, config.credsPassword, Iron.defaults)
     }
     this.decrypt = async (sealed: string) => {
-      return await Iron.unseal(sealed, config.credsPassword, Iron.defaults)
+      return await Iron.unseal(
+        sealed,
+        {
+          [config.credsPassword.id]: config.credsPassword.secret,
+        },
+        Iron.defaults,
+      )
     }
   }
 
@@ -171,7 +178,7 @@ export class SlackApi {
       body: {
         created_at: new Date().toJSON(),
         payload: await this.encrypt(response.data),
-      } as CredDoc,
+      } as CredSource,
     })
 
     return response.data
@@ -213,17 +220,24 @@ export class SlackApi {
   private getIncomingWebhookUrl(decryptedCreds: unknown) {
     if (
       has(decryptedCreds, 'incoming_webhook') &&
-      isObj(decryptedCreds.incoming_webhook)
+      isObj(decryptedCreds.incoming_webhook) &&
+      has(decryptedCreds.incoming_webhook, 'url') &&
+      isString(decryptedCreds.incoming_webhook.url)
     ) {
-      if (
-        has(decryptedCreds.incoming_webhook, 'url') &&
-        isString(decryptedCreds.incoming_webhook.url)
-      ) {
-        return decryptedCreds.incoming_webhook.url
-      }
+      return decryptedCreds.incoming_webhook.url
     }
 
     return undefined
+  }
+
+  public async getAllCreds() {
+    return await AsyncIter.collect(this.makeAllCredsIter())
+  }
+
+  private makeAllCredsIter() {
+    return scrollSearch<EsHit<CredSource>>(this.es, {
+      index: this.credsIndex,
+    })
   }
 
   public async broadcast(msg: string) {
@@ -234,20 +248,32 @@ export class SlackApi {
       },
     })
 
-    const failures = await attemptMapAll(
-      scrollSearch<CredDoc>(this.es, {
-        index: this.credsIndex,
-      }),
-
-      async ({ payload }) => {
-        const creds = this.decrypt(payload)
+    const failures = await AsyncIter.attempt(
+      this.makeAllCredsIter(),
+      async ({ _source: { payload } }) => {
+        const creds = await this.decrypt(payload)
         const webhookUrl = this.getIncomingWebhookUrl(creds)
 
         if (!webhookUrl) {
+          this.log.warn('missing webhook url in slack credentials', {
+            '@type': 'invalidSlackCreds',
+            data: {
+              creds:
+                typeof creds !== 'object'
+                  ? inspect(creds)
+                  : {
+                      ...creds,
+                      access_token: '<hidden>',
+                    },
+            },
+          })
           return
         }
 
         await this.sendToWebhook(slackEscape(msg), webhookUrl)
+      },
+      {
+        concurrency: 10,
       },
     )
 
@@ -255,7 +281,7 @@ export class SlackApi {
       this.log.error('Slack broadcast failure', {
         '@type': 'slackBroadcastFailure',
         data: {
-          ...failure.error,
+          stack: failure.reason.stack,
         },
       })
     }

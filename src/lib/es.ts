@@ -4,6 +4,13 @@ import { getConfigVar } from '@spalger/micro-plus'
 import { Log } from './log'
 import { makeContextCache } from './req_cache'
 
+export type EsHit<T> = {
+  _index: string
+  _id: string
+  _score?: number
+  _source: T
+}
+
 export function createRootClient(log: Log) {
   const es = new Client({
     node: getConfigVar('ES_URL'),
@@ -82,7 +89,10 @@ export async function recordCommitStatus(
   })
 }
 
-export async function* scrollSearch<T = any>(es: Client, params: any) {
+export async function* scrollSearch<T extends EsHit<any>>(
+  es: Client,
+  params: any,
+) {
   const page1 = await es.search({
     scroll: '1m',
     ...params,
