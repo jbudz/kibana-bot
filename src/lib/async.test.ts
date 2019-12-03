@@ -67,8 +67,11 @@ describe('asResult()', () => {
 
 describe('isPromise()', () => {
   it('returns true for promise and promise-like objects, nothing else', () => {
+    const rejected = Promise.reject()
+    rejected.catch(() => {}) // prevent unhandled rejection warning
+
     expect(isPromise(Promise.resolve())).toBe(true)
-    expect(isPromise(Promise.reject())).toBe(true)
+    expect(isPromise(rejected)).toBe(true)
     expect(isPromise({ then() {} })).toBe(false)
     expect(isPromise(false)).toBe(false)
     expect(isPromise({})).toBe(false)
