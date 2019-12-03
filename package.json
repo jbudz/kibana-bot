@@ -6,7 +6,7 @@
   "scripts": {
     "build": "babel src -d dist --delete-dir-on-start -x .ts --ignore **/*.test.ts --source-maps",
     "type_check": "tsc --noEmit",
-    "lint": "yarn eslint . --ext .ts,.js",
+    "lint": "yarn eslint . --ext .ts,.js --max-warnings 0",
     "test": "yarn type_check && yarn lint && yarn jest"
   },
   "jest": {
