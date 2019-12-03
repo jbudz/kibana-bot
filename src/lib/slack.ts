@@ -1,10 +1,9 @@
 import QueryString from 'querystring'
 import Iron from '@hapi/iron'
 import { Client } from '@elastic/elasticsearch'
-import { inspect } from 'util'
 
 import Axios from 'axios'
-import { getConfigVar } from '@spalger/micro-plus'
+import { getConfigVar, ServerError } from '@spalger/micro-plus'
 
 import { scrollSearch } from './es'
 import * as AsyncIter from './async_iterators'
@@ -87,6 +86,7 @@ export class SlackApi {
     this.encrypt = async (data: unknown) => {
       return await Iron.seal(data, config.credsPassword, Iron.defaults)
     }
+
     this.decrypt = async (sealed: string) => {
       return await Iron.unseal(
         sealed,
@@ -177,7 +177,7 @@ export class SlackApi {
       id: response.data.team_name,
       body: {
         created_at: new Date().toJSON(),
-        payload: await this.encrypt(response.data),
+        payload: await this.encryptCredsFromSlackAuth(response.data),
       } as CredSource,
     })
 
@@ -217,17 +217,65 @@ export class SlackApi {
     }
   }
 
-  private getIncomingWebhookUrl(decryptedCreds: unknown) {
+  private async encryptCredsFromSlackAuth(authResp: unknown) {
+    let webhookUrl: string | undefined
     if (
-      has(decryptedCreds, 'incoming_webhook') &&
-      isObj(decryptedCreds.incoming_webhook) &&
-      has(decryptedCreds.incoming_webhook, 'url') &&
-      isString(decryptedCreds.incoming_webhook.url)
+      has(authResp, 'incoming_webhook') &&
+      isObj(authResp.incoming_webhook) &&
+      has(authResp.incoming_webhook, 'url') &&
+      isString(authResp.incoming_webhook.url)
     ) {
-      return decryptedCreds.incoming_webhook.url
+      webhookUrl = authResp.incoming_webhook.url
     }
 
-    return undefined
+    let accessToken: string | undefined
+    if (has(authResp, 'access_token') && isString(authResp.access_token)) {
+      accessToken = authResp.access_token
+    }
+
+    if (!webhookUrl || !accessToken) {
+      this.log.error('Unable to parse creds from slack auth', {
+        '@type': 'parseSlackCredsFailure',
+        data: {
+          encrypted_slack_creds: this.encrypt(authResp),
+        },
+      })
+      throw new ServerError('unable to parse message from slack')
+    }
+
+    return await this.encrypt({
+      webhookUrl,
+      accessToken,
+    })
+  }
+
+  private async decryptSlackCreds(encryptedPayload: string) {
+    const decrypted = await this.decrypt(encryptedPayload)
+
+    const webhookUrl =
+      has(decrypted, 'webhookUrl') && isString(decrypted.webhookUrl)
+        ? decrypted.webhookUrl
+        : undefined
+
+    const accessToken =
+      has(decrypted, 'accessToken') && isString(decrypted.accessToken)
+        ? decrypted.accessToken
+        : undefined
+
+    if (!webhookUrl || !accessToken) {
+      this.log.error('Unable to parse stored creds from slack creds index', {
+        '@type': 'parseSlackCredsFailure',
+        data: {
+          encrypted_slack_creds: encryptedPayload,
+        },
+      })
+      throw new ServerError('unable to parse stored creds')
+    }
+
+    return {
+      webhookUrl,
+      accessToken,
+    }
   }
 
   public async getAllCreds() {
@@ -251,26 +299,8 @@ export class SlackApi {
     const failures = await AsyncIter.attempt(
       this.makeAllCredsIter(),
       async ({ _source: { payload } }) => {
-        const creds = await this.decrypt(payload)
-        const webhookUrl = this.getIncomingWebhookUrl(creds)
-
-        if (!webhookUrl) {
-          this.log.warn('missing webhook url in slack credentials', {
-            '@type': 'invalidSlackCreds',
-            data: {
-              creds:
-                typeof creds !== 'object'
-                  ? inspect(creds)
-                  : {
-                      ...creds,
-                      access_token: '<hidden>',
-                    },
-            },
-          })
-          return
-        }
-
-        await this.sendToWebhook(slackEscape(msg), webhookUrl)
+        const creds = await this.decryptSlackCreds(payload)
+        await this.sendToWebhook(slackEscape(msg), creds.webhookUrl)
       },
       {
         concurrency: 10,
