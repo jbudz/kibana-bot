@@ -96,14 +96,16 @@ async function* ittrPrs(githubApi: GithubApi) {
   }
 }
 
-export async function runPrintDocStatusCommand(githubApi: GithubApi) {
-  const ES_DOCS_CONTEXT = 'elasticsearch-ci/docs'
-
+export async function runPrintStatusCommand(
+  githubApi: GithubApi,
+  statusContext: string,
+) {
   for await (const pr of ittrPrs(githubApi)) {
-    switch (pr.statuses[ES_DOCS_CONTEXT]) {
+    switch (pr.statuses[statusContext]) {
       case 'PENDING':
         console.info(`#${pr.id} pending`)
         continue
+      case 'ERROR':
       case 'FAILURE':
         console.info(`#${pr.id} failure`)
         continue
