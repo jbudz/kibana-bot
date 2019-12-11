@@ -20,12 +20,12 @@ export const invalidateDocFailures = new Reactor<GithubWebhookCommitStatus>({
     const isPrNotIncludingDocs: number[] = []
 
     for (const pr of await githubApi.getPrsAndFiles(sha)) {
-      if (pr.lastCommitSha !== sha) {
+      if (pr.updatedSinceCommit) {
         isPrUpdatedSinceCommit.push(pr.id)
         continue
       }
 
-      if (!pr.hasMoreFiles && !getIncludesDocsSiteChanges(pr.files)) {
+      if (!getIncludesDocsSiteChanges(pr.files)) {
         isPrNotIncludingDocs.push(pr.id)
         continue
       }

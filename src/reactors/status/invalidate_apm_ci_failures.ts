@@ -20,12 +20,12 @@ export const invalidateApmCiFailures = new Reactor<GithubWebhookCommitStatus>({
     const isPrNotIncludingApmChanges: number[] = []
 
     for (const pr of await githubApi.getPrsAndFiles(sha)) {
-      if (pr.lastCommitSha !== sha) {
+      if (pr.updatedSinceCommit) {
         isPrUpdatedSinceCommit.push(pr.id)
         continue
       }
 
-      if (!pr.hasMoreFiles && !getIncludesApmChanges(pr.files)) {
+      if (!getIncludesApmChanges(pr.files)) {
         isPrNotIncludingApmChanges.push(pr.id)
         continue
       }

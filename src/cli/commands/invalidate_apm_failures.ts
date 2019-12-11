@@ -3,6 +3,19 @@ import gql from 'graphql-tag'
 import { GithubApi, getIncludesApmChanges } from '../../lib'
 import { GQLStatusState } from '../../github_api_types'
 
+const filterMap = <T, T2>(arr: T[], fn: (a: T) => T2 | undefined): T2[] => {
+  return Array.from(
+    (function*() {
+      for (const a of arr) {
+        const val = fn(a)
+        if (val !== undefined) {
+          yield val
+        }
+      }
+    })(),
+  )
+}
+
 type QueryPage = {
   repository: {
     pullRequests: {
@@ -13,6 +26,10 @@ type QueryPage = {
           nodes: Array<{
             path: string
           }>
+          pageInfo: {
+            hasNextPage: boolean
+            endCursor: string
+          }
         }
         lastCommit: {
           nodes: Array<{
@@ -55,6 +72,10 @@ const Query = gql`
           files(first: 100) {
             nodes {
               path
+            }
+            pageInfo {
+              endCursor
+              hasNextPage
             }
           }
           lastCommit: commits(last: 1) {
@@ -99,26 +120,33 @@ async function* ittrFailedPrs(githubApi: GithubApi, failureContext: string) {
       cursors.push(page.pageInfo.endCursor)
     }
 
-    for (const pr of page.nodes) {
-      const [lastCommit] = pr.lastCommit.nodes
+    const pageOfFails = page.nodes.filter(n => {
+      const [lastCommit] = n.lastCommit.nodes
       const { contexts = [] } = lastCommit.commit.status || {}
       const context = contexts.find(c => c.context === failureContext)
 
-      if (context?.state !== 'FAILURE' && context?.state !== 'ERROR') {
-        continue
-      }
+      return context?.state === 'FAILURE' || context?.state === 'ERROR'
+    })
 
-      if (pr.changedFiles > pr.files.nodes.length) {
-        console.error(
-          `⚠️  PR ${pr.number} has too many changed files = ${pr.changedFiles}`,
-        )
-        continue
-      }
+    const extendedFilePathLists = await githubApi.getRestOfFiles(
+      filterMap(pageOfFails, pr =>
+        !pr.files.pageInfo.hasNextPage
+          ? undefined
+          : {
+              id: pr.number,
+              files: pr.files.nodes.map(f => f.path),
+              filesEndCursor: pr.files.pageInfo.endCursor,
+            },
+      ),
+    )
 
+    for (const n of pageOfFails) {
+      const filePaths =
+        extendedFilePathLists.get(n.number) || n.files.nodes.map(n => n.path)
       yield {
-        id: pr.number,
-        sha: lastCommit.commit.oid,
-        filePaths: pr.files.nodes.map(n => n.path),
+        id: n.number,
+        sha: n.lastCommit.nodes[0].commit.oid,
+        filePaths,
       }
     }
   }

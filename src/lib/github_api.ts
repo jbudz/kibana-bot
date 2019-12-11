@@ -32,6 +32,22 @@ interface CommitStatusOptions {
   target_url?: string
 }
 
+export type FileReq = {
+  id: number
+  filesEndCursor: string
+  files?: string[]
+}
+export type OutdatedPr = {
+  id: number
+  updatedSinceCommit: true
+  files?: undefined
+}
+export type PrWithFiles = {
+  id: number
+  updatedSinceCommit: false
+  files: string[]
+}
+
 const getCommitDate = (commit: Commit) => {
   const committerDate = new Date(commit.committer.date)
   const authorDate = new Date(commit.author.date)
@@ -135,6 +151,7 @@ export class GithubApi {
             }>
             pageInfo: {
               hasNextPage: boolean
+              endCursor: string
             }
           }
         }>
@@ -162,6 +179,7 @@ export class GithubApi {
                   }
                   pageInfo {
                     hasNextPage
+                    endCursor
                   }
                 }
               }
@@ -174,12 +192,125 @@ export class GithubApi {
       },
     )
 
-    return resp.search.nodes.map(n => ({
-      id: n.number,
-      lastCommitSha: n.commits.nodes.map(nn => nn.commit.oid).shift(),
-      hasMoreFiles: n.files.pageInfo.hasNextPage,
-      files: n.files.nodes.map(nn => nn.path),
-    }))
+    const restOfFilesReqs: FileReq[] = []
+    const prs: Array<OutdatedPr | PrWithFiles> = []
+
+    for (const n of resp.search.nodes) {
+      const lastSha = n.commits.nodes.map(nn => nn.commit.oid).shift()
+      if (lastSha !== commitSha) {
+        prs.push({
+          id: n.number,
+          updatedSinceCommit: true,
+        })
+        continue
+      }
+
+      prs.push({
+        id: n.number,
+        updatedSinceCommit: false,
+        // placeholder, will be replaced once rest of files are fetched
+        files: [],
+      })
+      restOfFilesReqs.push({
+        id: n.number,
+        files: n.files.nodes.map(nn => nn.path),
+        filesEndCursor: n.files.pageInfo.endCursor,
+      })
+    }
+
+    const allFiles = await this.getRestOfFiles(restOfFilesReqs)
+    return prs.map(pr => {
+      const files = allFiles.get(pr.id)
+      return files ? ({ ...pr, files } as PrWithFiles) : (pr as OutdatedPr)
+    })
+  }
+
+  public async getRestOfFiles(reqs: FileReq[]): Promise<Map<number, string[]>> {
+    // array of requests that will be fetched, on each fetch the array is cleared and reloaded with info to fetch the subsequent pages
+    const nextReqs = reqs.slice()
+
+    // map of all files for the requested pr ids
+    const allFiles = new Map(reqs.map(r => [r.id, r.files || []]))
+
+    while (nextReqs.length) {
+      const batch = nextReqs.splice(0)
+
+      type RepsonseType = {
+        repository: {
+          [prKey: string]: {
+            number: number
+            files: {
+              nodes: Array<{
+                path: string
+              }>
+              pageInfo: {
+                endCursor: string
+                hasNextPage: boolean
+              }
+            }
+          }
+        }
+      }
+
+      let queries = ''
+      const vars: Array<{
+        name: string
+        type: string
+        value: string | number
+      }> = []
+      for (const [i, { id, filesEndCursor }] of batch.entries()) {
+        queries = `${queries}
+          req${i}: pullRequest(number: $num${i}) {
+            number
+            files(first: 100, after: $after${i}) {
+              nodes {
+                path
+              }
+              pageInfo {
+                endCursor
+                hasNextPage
+              }
+            }
+          }
+        `
+        vars.push(
+          {
+            name: `num${i}`,
+            type: 'Int!',
+            value: id,
+          },
+          {
+            name: `after${i}`,
+            type: 'String!',
+            value: filesEndCursor,
+          },
+        )
+      }
+
+      const args = vars.map(v => `$${v.name}: ${v.type}`)
+      const moreFilesResp = await this.gql<RepsonseType>(
+        gql`query(${args.join(',')}) {
+          repository(owner: "elastic", name: "kibana") {${queries}}
+        }`,
+        Object.fromEntries(vars.map(v => [v.name, v.value])),
+      )
+
+      for (const resp of Object.values(moreFilesResp.repository)) {
+        allFiles.set(resp.number, [
+          ...(allFiles.get(resp.number) || []),
+          ...resp.files.nodes.map(n => n.path),
+        ])
+
+        if (resp.files.pageInfo.hasNextPage) {
+          nextReqs.push({
+            id: resp.number,
+            filesEndCursor: resp.files.pageInfo.endCursor,
+          })
+        }
+      }
+    }
+
+    return allFiles
   }
 
   public async getPrFiles(prId: number) {
@@ -234,7 +365,7 @@ export class GithubApi {
     query: ASTNode,
     variables: Record<string, any>,
   ) {
-    const resp = await this.ax.request<{ data: T }>({
+    const resp = await this.ax.request<{ data: T; errors?: unknown }>({
       url: 'https://api.github.com/graphql',
       method: 'POST',
       headers: {
@@ -245,6 +376,10 @@ export class GithubApi {
         variables,
       },
     })
+
+    if (resp.data.errors) {
+      throw new Error(`Graphql Errors: ${JSON.stringify(resp.data.errors)}`)
+    }
 
     this.checkForGqlRateLimitInfo(resp.data.data)
 
