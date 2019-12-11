@@ -4,6 +4,7 @@ import { getConfigVar } from '@spalger/micro-plus'
 
 import { CliError } from './errors'
 import { runPrintStatusCommand } from './commands/print_status'
+import { runInvalidateApmFailuresCommand } from './commands/invalidate_apm_failures'
 import { runPrintBaseBranchesCommand } from './commands/print_base_branches'
 import { runRefreshCommand } from './commands/refresh'
 import { runRefreshAllCommand } from './commands/refresh_all'
@@ -16,16 +17,21 @@ CLI to run tasks on Kibana PRs
 
   Commands:
     help                     show this message
-    print_status [context]   print the specific status of each PR
     refresh [pr] [reactor]   run a specific reactor against a specific pr
     refresh_all [reactor]    run a specific reactor against all open prs
     print_base_branches      print the base branch of all open prs
+    print_status [context]   print the specific status of each PR
+      --only-failures, -f       Only print failure statuses
 `
 
 export async function main() {
   try {
     const unknownFlagNames: string[] = []
     const argv = getopts(process.argv.slice(2), {
+      boolean: ['only-failures'],
+      alias: {
+        f: 'only-failures',
+      },
       unknown(name) {
         unknownFlagNames.push(name)
         return false
@@ -43,7 +49,15 @@ export async function main() {
       case 'print_status': {
         const [, context] = argv._
         const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        await runPrintStatusCommand(githubApi, context)
+        await runPrintStatusCommand(githubApi, context, {
+          onlyFailures: !!argv['only-failures'],
+        })
+        return
+      }
+
+      case 'invalidate_apm_ci_failures': {
+        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        await runInvalidateApmFailuresCommand(githubApi)
         return
       }
 
