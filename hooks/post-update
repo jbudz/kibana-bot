@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -e
+
+# init nvm
+export NVM_DIR="$HOME/.nvm"
+. "$NVM_DIR/nvm.sh"
+
+# build into tempdir
+rm -rf ~/app-tmp
+mkdir ~/app-tmp
+cd ~/repo
+git archive --format tar "$1" | tar -x -C ~/app-tmp
+cd ~/app-tmp
+nvm install
+interpreter="$(which node)"
+echo "Using interpreter [$interpreter]"
+which yarn || npm install -g yarn
+yarn
+yarn build
+
+# copy env config
+cp ~/.env .
+
+# run tests before deploying
+yarn test
+
+# swap out running app
+nvm use default
+pm2 stop app || echo 'app not running'
+rm -rf ~/app
+mv ~/app-tmp ~/app
+pm2 start index.js --name app --interpreter="$interpreter"
