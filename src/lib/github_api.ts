@@ -16,10 +16,14 @@ import {
 } from '../github_api_types'
 import { makeContextCache } from './req_cache'
 import { getRequestLogger } from './log'
-import { isAxiosErrorReq, isAxiosErrorResp } from './axios_errors'
+import {
+  isAxiosErrorReq,
+  isAxiosErrorResp,
+  AxiosErrorResp,
+} from './axios_errors'
 
 const RATE_LIMIT_THROTTLE_MS = 10 * 1000
-const DEFAULT_RETRY_ON_502_ATTEMPTS = 3
+const MAX_REQ_ATTEMPTS = 3
 const sleep = async (ms: number) =>
   await new Promise(resolve => setTimeout(resolve, ms))
 
@@ -386,12 +390,45 @@ export class GithubApi {
     return resp.data.data
   }
 
+  private shouldRetry(
+    error: AxiosErrorResp,
+    url: string,
+    method: Method,
+    attempt: number,
+  ) {
+    if (attempt >= MAX_REQ_ATTEMPTS) {
+      return false
+    }
+
+    if (error.response.status === 502) {
+      return true
+    }
+
+    if (
+      method.toLocaleLowerCase() === 'post' &&
+      error.response.status === 422 &&
+      error.response.data?.message?.startsWith('No commit found for SHA:')
+    ) {
+      return true
+    }
+
+    if (
+      method.toLocaleLowerCase() === 'get' &&
+      url.includes('/compare/') &&
+      error.response.status === 404
+    ) {
+      return true
+    }
+
+    return false
+  }
+
   private async req<Result = any>(
     method: Method,
     url: string,
     params?: { [key: string]: any },
     body?: { [key: string]: any },
-    retryOn502Attempts: number = DEFAULT_RETRY_ON_502_ATTEMPTS,
+    attempt = 1,
   ): Promise<AxiosResponse<Result>> {
     try {
       const resp = await this.ax({
@@ -424,15 +461,14 @@ export class GithubApi {
           },
         })
 
-        if (error.response.status === 502 && retryOn502Attempts > 0) {
-          const attempt = DEFAULT_RETRY_ON_502_ATTEMPTS - retryOn502Attempts
+        if (this.shouldRetry(error, url, method, attempt)) {
           const delay = 2000 * attempt
 
           this.log.debug('automatically retrying request', {
-            '@type': 'githubApi502Retry',
+            '@type': 'githubApiAutoRetry',
             status: error.response.status,
             delay,
-            retryOn502Attempts,
+            attempt,
             data: {
               method,
               url,
@@ -442,13 +478,7 @@ export class GithubApi {
           })
 
           await sleep(delay)
-          return this.req<Result>(
-            method,
-            url,
-            params,
-            body,
-            retryOn502Attempts - 1,
-          )
+          return this.req<Result>(method, url, params, body, attempt + 1)
         }
       } else if (isAxiosErrorReq(error)) {
         this.log.debug('github api request error', {

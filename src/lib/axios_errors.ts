@@ -1,10 +1,10 @@
 import { AxiosError, AxiosResponse } from 'axios'
 
-interface AxiosErrorReq extends AxiosError {
+export interface AxiosErrorReq extends AxiosError {
   request: any
 }
 
-interface AxiosErrorResp extends AxiosErrorReq {
+export interface AxiosErrorResp extends AxiosErrorReq {
   response: AxiosResponse
 }
 
