@@ -474,6 +474,12 @@ export class GithubApi {
               url,
               params,
               body,
+              resp: {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                headers: error.response.headers,
+                body: error.response.data,
+              },
             },
           })
 
