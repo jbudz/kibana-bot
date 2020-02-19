@@ -4,6 +4,7 @@ import { releaseVersionLabels } from './release_version_labels'
 import { docsOnlyChangeCi } from './docs_only_change_ci'
 // import { badCommits } from './bad_commits'
 import { configOnlyChangeCi } from './config_only_change_ci'
+import { backportReminder } from './backport_reminder'
 
 export const prReactors = [
   outdated,
@@ -12,4 +13,5 @@ export const prReactors = [
   docsOnlyChangeCi,
   // badCommits,
   configOnlyChangeCi,
+  backportReminder,
 ]

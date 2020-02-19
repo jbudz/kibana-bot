@@ -390,6 +390,170 @@ export class GithubApi {
     return resp.data.data
   }
 
+  public async getBackportState(prId: number) {
+    type PrRef = {
+      __typename: 'PullRequest'
+      /** The possible states of a pull request. */
+      state: 'OPEN' | 'CLOSED' | 'MERGED'
+      /** Identifies the name of the base Ref associated with the pull request, even if the ref has been deleted. */
+      baseRefName: string
+      commits: {
+        edges: Array<{
+          node: {
+            /** The Git commit object */
+            commit: {
+              /** The Git commit message */
+              message: string
+            }
+          }
+        }>
+      }
+    }
+
+    interface PendingOrOpenPrRef extends PrRef {
+      state: Exclude<PrRef['state'], 'CLOSED'>
+    }
+
+    type OtherRef = {
+      __typename: unknown
+    }
+
+    type RepsonseType = {
+      repository?: {
+        /** Returns a single pull request from the current repository by number. */
+        pullRequest?: {
+          /** The commit that was created when this pull request was merged. */
+          mergeCommit?: {
+            /** The Git commit message */
+            message: string
+          }
+
+          labels?: {
+            nodes?: Array<{
+              name: string
+            }>
+          }
+
+          /** A list of events, comments, commits, etc. associated with the pull request. */
+          timelineItems: {
+            edges: Array<
+              | {
+                  node?: {
+                    source?: PrRef | OtherRef
+                  }
+                }
+              | undefined
+              | null
+            >
+          }
+        }
+      }
+    }
+
+    const resp = await this.gql<RepsonseType>(
+      gql`
+        query($prId: Int!) {
+          repository(owner: "elastic", name: "kibana") {
+            pullRequest(number: $prId) {
+              mergeCommit {
+                message
+              }
+
+              labels(first: 100) {
+                nodes {
+                  name
+                }
+              }
+
+              timelineItems(last: 20, itemTypes: CROSS_REFERENCED_EVENT) {
+                edges {
+                  node {
+                    ... on CrossReferencedEvent {
+                      source {
+                        __typename
+                        ... on PullRequest {
+                          state
+                          baseRefName
+                          commits(first: 20) {
+                            edges {
+                              node {
+                                commit {
+                                  message
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `,
+      {
+        prId,
+      },
+    )
+
+    const pr = resp.repository?.pullRequest
+    if (!pr) {
+      throw new Error(`unable to find PR #${prId}`)
+    }
+
+    if (!pr.mergeCommit) {
+      throw new Error(`pr #${prId} not merged`)
+    }
+
+    const getFirstLine = (str: string) => str.split('\n')[0]
+    const firstLineOfMergeCommit = getFirstLine(pr.mergeCommit.message)
+
+    return {
+      labels: pr.labels?.nodes?.map(n => n.name) ?? [],
+      backportPrs: pr.timelineItems.edges
+        .map(edge => edge?.node?.source)
+        .filter((ref): ref is PrRef => ref?.__typename === 'PullRequest')
+        .filter(
+          (prRef): prRef is PendingOrOpenPrRef =>
+            (prRef.state === 'MERGED' || prRef.state === 'OPEN') &&
+            prRef.commits.edges.some(
+              commit =>
+                getFirstLine(commit.node.commit.message) ===
+                firstLineOfMergeCommit,
+            ),
+        )
+        .map(prRef => ({
+          branch: prRef.baseRefName,
+          state: prRef.state,
+        })),
+    }
+  }
+
+  public async setPrLabels(prId: number, labels: string[]) {
+    const resp = await this.post<GithubApiPr>(
+      this.issuesUrl(prId),
+      {},
+      {
+        labels,
+      },
+    )
+
+    return resp.data.labels
+  }
+
+  public async addCommentToPr(prId: number, commentBody: string) {
+    const url = `${this.issuesUrl(prId)}/comments`
+    await this.post<unknown>(
+      url,
+      {},
+      {
+        body: commentBody,
+      },
+    )
+  }
+
   private shouldRetry(
     error: AxiosErrorResp,
     url: string,
@@ -421,6 +585,11 @@ export class GithubApi {
     }
 
     return false
+  }
+
+  private issuesUrl(id: number) {
+    const idComponent = encodeURIComponent(id)
+    return `/repos/elastic/kibana/issues/${idComponent}`
   }
 
   private async req<Result = any>(
