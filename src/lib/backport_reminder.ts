@@ -62,6 +62,17 @@ export async function clearBackportReminder(es: Client, prNumber: number) {
   )
 }
 
+export async function clearBackportMissingLabel(
+  githubApi: GithubApi,
+  prNumber: number,
+  labels: string[],
+) {
+  const cleanLabels = labels.filter(l => l !== BACKPORT_MISSING_LABEL)
+  if (cleanLabels.length !== labels.length) {
+    await githubApi.setPrLabels(prNumber, cleanLabels)
+  }
+}
+
 export async function maybeSendBackportReminder({
   es,
   log,
@@ -78,6 +89,7 @@ export async function maybeSendBackportReminder({
   /** PR NOT MERGED */
   if (backportPrs === undefined) {
     return {
+      prNumber,
       ignored: 'pr is not merged',
     }
   }
@@ -85,13 +97,10 @@ export async function maybeSendBackportReminder({
   /** BACKPORTS EXIST AND ARE ALL MERGED */
   if (backportPrs.length && backportPrs.every(pr => pr.state === 'MERGED')) {
     await clearBackportReminder(es, prNumber)
-
-    const cleanLabels = labels.filter(l => l !== BACKPORT_MISSING_LABEL)
-    if (cleanLabels.length !== labels.length) {
-      await githubApi.setPrLabels(prNumber, cleanLabels)
-    }
+    await clearBackportMissingLabel(githubApi, prNumber, labels)
 
     return {
+      prNumber,
       ignored: 'all backport prs are merged',
     }
   }
@@ -113,7 +122,7 @@ export async function maybeSendBackportReminder({
   )
 
   return {
-    ignored: false,
+    prNumber,
     commented: true,
   }
 }

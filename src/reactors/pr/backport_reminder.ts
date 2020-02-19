@@ -1,5 +1,9 @@
 import { ReactorInput, PrReactor } from './pr_reactor'
-import { scheduleBackportReminder, clearBackportReminder } from '../../lib'
+import {
+  scheduleBackportReminder,
+  clearBackportReminder,
+  clearBackportMissingLabel,
+} from '../../lib'
 
 const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'refresh',
@@ -16,14 +20,11 @@ export const backportReminder = new PrReactor({
   async exec({ input: { pr }, es, log, githubApi }) {
     if (pr.labels.some(l => l.name === 'backport:skip')) {
       await clearBackportReminder(es, pr.number)
-
-      const cleanLabels = pr.labels
-        .filter(l => l.name === 'backport missing')
-        .map(l => l.name)
-
-      if (cleanLabels.length !== pr.labels.length) {
-        await githubApi.setPrLabels(pr.number, cleanLabels)
-      }
+      await clearBackportMissingLabel(
+        githubApi,
+        pr.number,
+        pr.labels.map(l => l.name),
+      )
 
       return {
         pr: pr.number,
