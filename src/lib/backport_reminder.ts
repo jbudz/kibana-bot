@@ -12,9 +12,15 @@ export const BACKPORT_REMINDER_INDEX = 'prbot-backport-pr-reminders'
 
 const BACKPORT_MISSING_LABEL = 'backport missing'
 
-const createBackportReminderComment = (pendingPrs: number) => {
+const createBackportReminderComment = (
+  prNumber: number,
+  pendingPrs: number,
+) => {
   if (pendingPrs === 0) {
-    return `Looks like this PR hasn't been backported yet. Please create backport PRs and merge them ASAP to keep the branches relatively in sync.`
+    return (
+      'Friendly reminder: Looks like this PR hasn’t been backported yet.\n' +
+      `To create backports run \`node scripts/backport --pr ${prNumber}\` or prevent reminders by adding the \`backport:skip\` label.`
+    )
   }
 
   if (pendingPrs === 1) {
@@ -103,7 +109,7 @@ export async function maybeSendBackportReminder({
   // comment on the pr about the missing backport
   await githubApi.addCommentToPr(
     prNumber,
-    createBackportReminderComment(backportPrs.length),
+    createBackportReminderComment(prNumber, backportPrs.length),
   )
 
   return {
