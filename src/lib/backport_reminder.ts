@@ -11,15 +11,18 @@ const REMINDER_DELAY = 24 * HOUR
 export const BACKPORT_REMINDER_INDEX = 'prbot-backport-pr-reminders'
 
 const BACKPORT_MISSING_LABEL = 'backport missing'
-const BACKPORT_MISSING_COMMENT = `
-Looks like this PR hasn't been backported yet. Please create backport PRs and merge
-them ASAP to keep the branches relatively in sync.
-`.trim()
 
-const BACKPORT_PENDING_COMMENT = `
-Looks like this PR has backport PRs but they still haven't been merged. Please
-merge the backports ASAP to keep the branches relatively in sync.
-`.trim()
+const createBackportReminderComment = (pendingPrs: number) => {
+  if (pendingPrs === 0) {
+    return `Looks like this PR hasn't been backported yet. Please create backport PRs and merge them ASAP to keep the branches relatively in sync.`
+  }
+
+  if (pendingPrs === 1) {
+    return `Looks like this PR has a backport PR but it still hasn't been merged. Please merge it ASAP to keep the branches relatively in sync.`
+  }
+
+  return `Looks like this PR has backport PRs but they still haven't been merged. Please merge them ASAP to keep the branches relatively in sync.`
+}
 
 export async function scheduleBackportReminder(
   es: Client,
@@ -100,7 +103,7 @@ export async function maybeSendBackportReminder({
   // comment on the pr about the missing backport
   await githubApi.addCommentToPr(
     prNumber,
-    backportPrs.length ? BACKPORT_PENDING_COMMENT : BACKPORT_MISSING_COMMENT,
+    createBackportReminderComment(backportPrs.length),
   )
 
   return {
