@@ -5,6 +5,7 @@ import { docsOnlyChangeCi } from './docs_only_change_ci'
 // import { badCommits } from './bad_commits'
 import { configOnlyChangeCi } from './config_only_change_ci'
 import { backportReminder } from './backport_reminder'
+import { communityPr } from './community_pr'
 
 export const prReactors = [
   outdated,
@@ -14,4 +15,5 @@ export const prReactors = [
   // badCommits,
   configOnlyChangeCi,
   backportReminder,
+  communityPr,
 ]

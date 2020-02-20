@@ -318,13 +318,16 @@ export class SlackApi {
   }
 }
 
-const slackApiCache = makeContextCache('github api', ctx => {
-  return new SlackApi(getRequestLogger(ctx), getEsClient(ctx), {
+export const createSlackApi = (log: Log, client: Client) =>
+  new SlackApi(log, client, {
     credsIndex: getConfigVar('SLACK_CREDS_INDEX'),
     clientId: getConfigVar('SLACK_CLIENT_ID'),
     clientSecret: getConfigVar('SLACK_CLIENT_SECRET'),
     credsPassword: JSON.parse(getConfigVar('SLACK_CREDS_PASSWORD')),
   })
-})
+
+const slackApiCache = makeContextCache('github api', ctx =>
+  createSlackApi(getRequestLogger(ctx), getEsClient(ctx)),
+)
 
 export const getSlackApi = slackApiCache.get
