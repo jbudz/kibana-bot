@@ -7,7 +7,7 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'ready_for_review',
 ]
 
-const NON_COMMUNITY_ASSOCIATIONS: GithubApiPr['author_association'][] = [
+const CAN_COMMIT_ASSOCIATIONS: GithubApiPr['author_association'][] = [
   'MEMBER',
   'OWNER',
   'COLLABORATOR',
@@ -19,9 +19,18 @@ export const communityPr = new PrReactor({
   filter: ({ input: { action, pr } }) =>
     pr.state === 'open' && !pr.draft && RELEVANT_ACTIONS.includes(action),
 
-  async exec({ input: { pr }, log, es }) {
-    const isCommunityPr = !NON_COMMUNITY_ASSOCIATIONS.includes(
-      pr.author_association,
+  async exec({ input: { pr }, githubApi, log, es }) {
+    // if the pr.author_association indicates that the user has commit access then
+    // we don't need to go to the API, but if it doesn't it might be because the pr
+    // object sent by the webhook isn't fetched with authentication and can't show
+    // us org members who have hidden their association on their profile. To see them
+    // we have to re-fetch the PR from the API.
+    const authdPr = CAN_COMMIT_ASSOCIATIONS.includes(pr.author_association)
+      ? pr
+      : await githubApi.getPr(pr.number)
+
+    const isCommunityPr = !CAN_COMMIT_ASSOCIATIONS.includes(
+      authdPr.author_association,
     )
 
     if (isCommunityPr) {
