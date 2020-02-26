@@ -8,6 +8,7 @@ import { runInvalidateApmFailuresCommand } from './commands/invalidate_apm_failu
 import { runPrintBaseBranchesCommand } from './commands/print_base_branches'
 import { runRefreshCommand } from './commands/refresh'
 import { runRefreshAllCommand } from './commands/refresh_all'
+import { runBackportStateCommand } from './commands/backport_state'
 import { log, GithubApi, createRootClient } from '../lib'
 
 const helpText = `
@@ -21,6 +22,7 @@ CLI to run tasks on Kibana PRs
     refresh_all [reactor]    run a specific reactor against all open prs
     print_base_branches      print the base branch of all open prs
     print_status [context]   print the specific status of each PR
+    backport_state [pr]      print the backport state of a PR
       --only-failures, -f       Only print failure statuses
 `
 
@@ -80,6 +82,15 @@ export async function main() {
         const es = createRootClient(log)
         const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
         await runRefreshAllCommand(reactorId, log, es, githubApi)
+        return
+      }
+
+      case 'backport_state': {
+        const [, prIdInput] = argv._
+        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        await runBackportStateCommand(githubApi, {
+          prIdInput,
+        })
         return
       }
 
