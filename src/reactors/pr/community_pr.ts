@@ -13,11 +13,17 @@ const CAN_COMMIT_ASSOCIATIONS: GithubApiPr['author_association'][] = [
   'COLLABORATOR',
 ]
 
+/** users who should never trigger community pr notifications */
+const EXCLUDED_USERS = ['renovate[bot]']
+
 export const communityPr = new PrReactor({
   id: 'communityPr',
 
   filter: ({ input: { action, pr } }) =>
-    pr.state === 'open' && !pr.draft && RELEVANT_ACTIONS.includes(action),
+    pr.state === 'open' &&
+    !pr.draft &&
+    !EXCLUDED_USERS.includes(pr.user.login) &&
+    RELEVANT_ACTIONS.includes(action),
 
   async exec({ input: { pr }, githubApi, log, es }) {
     // if the pr.author_association indicates that the user has commit access then
