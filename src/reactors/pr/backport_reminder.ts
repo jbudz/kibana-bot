@@ -12,7 +12,7 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'closed',
 ]
 
-const SKIPPING_LABELS = ['backport:skip', 'backported']
+const DISABLE_LABELS = ['backport:skip', 'backported']
 
 export const backportReminder = new PrReactor({
   id: 'backportReminder',
@@ -62,8 +62,8 @@ export const backportReminder = new PrReactor({
       }
     }
 
-    const skippingLabel = pr.labels.find(l => SKIPPING_LABELS.includes(l.name))
-    if (skippingLabel) {
+    const disableLabel = pr.labels.find(l => DISABLE_LABELS.includes(l.name))
+    if (disableLabel) {
       await clearBackportReminder(es, pr.number)
       await clearBackportMissingLabel(
         githubApi,
@@ -73,7 +73,7 @@ export const backportReminder = new PrReactor({
 
       return {
         pr: pr.number,
-        reminderCleared: `pr has "${skippingLabel}" label`,
+        reminderCleared: `pr has "${disableLabel}" label`,
       }
     }
 
