@@ -12,7 +12,7 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'closed',
 ]
 
-const DISABLE_LABELS = ['backport:skip', 'backported']
+const DISABLE_LABELS = ['backport:skip', 'backported', 'reverted']
 
 export const backportReminder = new PrReactor({
   id: 'backportReminder',
