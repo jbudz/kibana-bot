@@ -1,5 +1,9 @@
 import { ReactorInput, PrReactor } from './pr_reactor'
-import { getIsConfigOnlyChange, retryOn404 } from '../../lib'
+import {
+  getIsDocsOnlyChange,
+  getIsConfigOnlyChange,
+  retryOn404,
+} from '../../lib'
 
 const CI_CONTEXT = 'kibana-ci'
 const SKIP_CI_RE = /.*\[skip\W+ci\].*/
@@ -11,8 +15,8 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'refresh',
 ]
 
-export const configOnlyChangeCi = new PrReactor({
-  id: 'configOnlyChangeCi',
+export const ciNotRequired = new PrReactor({
+  id: 'ciNotRequired',
 
   filter: ({ input: { action, pr } }) =>
     pr.state === 'open' && RELEVANT_ACTIONS.includes(action),
@@ -28,9 +32,16 @@ export const configOnlyChangeCi = new PrReactor({
     }
 
     const files = await retryOn404(log, () => githubApi.getPrFiles(pr.number))
+    const isDocsOnlyChange = getIsDocsOnlyChange(files)
     const isConfigOnlyChange = getIsConfigOnlyChange(files)
 
-    if (isConfigOnlyChange) {
+    if (isDocsOnlyChange) {
+      await githubApi.setCommitStatus(pr.head.sha, {
+        context: CI_CONTEXT,
+        description: 'Docs only change detected, CI is not required',
+        state: 'success',
+      })
+    } else if (isConfigOnlyChange) {
       await githubApi.setCommitStatus(pr.head.sha, {
         context: CI_CONTEXT,
         description: 'Config only change detected, CI is not required',
@@ -42,6 +53,7 @@ export const configOnlyChangeCi = new PrReactor({
       pr: pr.number,
       prTitle: pr.title,
       skipsCi,
+      isDocsOnlyChange,
       isConfigOnlyChange,
       fileNames: files.map(f =>
         f.previous_filename
