@@ -17,6 +17,7 @@ const fileEndsWith = (f: File, endsWith: string) =>
   fileMatch(f, p => p.endsWith(endsWith))
 
 const isDocs = (f: File) => fileStartsWith(f, 'docs/')
+const isRfc = (f: File) => fileStartsWith(f, 'rfcs/')
 const isApm = (f: File) => fileIncludes(f, '/apm/')
 const isMarkdown = (f: File) => fileEndsWith(f, '.md')
 const isGithubConfig = (f: File) => fileStartsWith(f, '.github/')
@@ -26,6 +27,6 @@ const isJjbbConfig = (f: File) =>
 export const getIncludesDocsSiteChanges = (files: File[]) => files.some(isDocs)
 export const getIncludesApmChanges = (files: File[]) => files.some(isApm)
 export const getIsDocsOnlyChange = (files: File[]) =>
-  files.every(f => isDocs(f) || isMarkdown(f))
+  files.every(f => isDocs(f) || isRfc(f) || isMarkdown(f))
 export const getIsConfigOnlyChange = (files: File[]) =>
   files.every(f => isGithubConfig(f) || isJjbbConfig(f))
