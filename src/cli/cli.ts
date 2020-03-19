@@ -6,8 +6,10 @@ import { CliError } from './errors'
 import { runPrintStatusCommand } from './commands/print_status'
 import { runInvalidateApmFailuresCommand } from './commands/invalidate_apm_failures'
 import { runPrintBaseBranchesCommand } from './commands/print_base_branches'
-import { runRefreshCommand } from './commands/refresh'
-import { runRefreshAllCommand } from './commands/refresh_all'
+import { runRefreshPrCommand } from './commands/refresh_pr'
+import { runRefreshAllPrsCommand } from './commands/refresh_all_prs'
+import { runRefreshIssueCommand } from './commands/refresh_issue'
+import { runRefreshAllIssuesCommand } from './commands/refresh_all_issues'
 import { runBackportStateCommand } from './commands/backport_state'
 import { log, GithubApi, createRootClient } from '../lib'
 
@@ -17,13 +19,15 @@ node cli [command] [...options]
 CLI to run tasks on Kibana PRs
 
   Commands:
-    help                     show this message
-    refresh [pr] [reactor]   run a specific reactor against a specific pr
-    refresh_all [reactor]    run a specific reactor against all open prs
-    print_base_branches      print the base branch of all open prs
-    print_status [context]   print the specific status of each PR
-    backport_state [pr]      print the backport state of a PR
-      --only-failures, -f       Only print failure statuses
+    help                           show this message
+    refresh_issue [num] [reactor]  run a specific reactor against a specific issue
+    refresh_all_issues [reactor]   run a specific reactor against all open issues
+    refresh_pr [pr] [reactor]      run a specific reactor against a specific pr
+    refresh_all_prs [reactor]      run a specific reactor against all open prs
+    print_base_branches            print the base branch of all open prs
+    print_pr_status [context]      print the specific status of each PR
+      --only-failures, -f            Only print failure statuses
+    backport_state [pr]            print the backport state of a PR
 `
 
 export async function main() {
@@ -48,7 +52,7 @@ export async function main() {
 
     const [command] = argv._
     switch (command) {
-      case 'print_status': {
+      case 'print_pr_status': {
         const [, context] = argv._
         const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
         await runPrintStatusCommand(githubApi, context, {
@@ -69,19 +73,35 @@ export async function main() {
         return
       }
 
-      case 'refresh': {
+      case 'refresh_pr': {
         const [, prId, reactorId] = argv._
         const es = createRootClient(log)
         const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        await runRefreshCommand(prId, reactorId, log, es, githubApi)
+        await runRefreshPrCommand(prId, reactorId, log, es, githubApi)
         return
       }
 
-      case 'refresh_all': {
+      case 'refresh_all_prs': {
         const [, reactorId] = argv._
         const es = createRootClient(log)
         const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        await runRefreshAllCommand(reactorId, log, es, githubApi)
+        await runRefreshAllPrsCommand(reactorId, log, es, githubApi)
+        return
+      }
+
+      case 'refresh_issue': {
+        const [, prId, reactorId] = argv._
+        const es = createRootClient(log)
+        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        await runRefreshIssueCommand(prId, reactorId, log, es, githubApi)
+        return
+      }
+
+      case 'refresh_all_issues': {
+        const [, reactorId] = argv._
+        const es = createRootClient(log)
+        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        await runRefreshAllIssuesCommand(reactorId, log, es, githubApi)
         return
       }
 

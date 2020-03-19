@@ -8,6 +8,7 @@ import { ASTNode } from 'graphql/language/ast'
 import { Log } from '../lib'
 import {
   GithubApiPr,
+  GithubApiIssue,
   GithubApiCompare,
   Commit,
   GithubApiCompareCommit,
@@ -129,6 +130,14 @@ export class GithubApi {
     const prIdComponent = encodeURIComponent(`${prId}`)
     const resp = await this.get<GithubApiPr>(
       `/repos/elastic/kibana/pulls/${prIdComponent}`,
+    )
+    return resp.data
+  }
+
+  public async getIssue(issueId: number) {
+    const issueIdComponent = encodeURIComponent(`${issueId}`)
+    const resp = await this.get<GithubApiIssue>(
+      `/repos/elastic/kibana/issues/${issueIdComponent}`,
     )
     return resp.data
   }
@@ -325,19 +334,32 @@ export class GithubApi {
     return resp.data
   }
 
-  public async *ittrAllOpenPrs() {
-    const urls: (string | null)[] = [null]
-
-    const fetchInitialPage = async () => {
+  public ittrAllOpenPrs() {
+    return this.ittrAll<GithubApiPr>(async () => {
       this.log.info('fetching initial page of PRs')
       return await this.get<GithubApiPr[]>('/repos/elastic/kibana/pulls', {
         state: 'open',
       })
-    }
+    })
+  }
+
+  public ittrAllOpenIssues() {
+    return this.ittrAll<GithubApiIssue>(async () => {
+      this.log.info('fetching initial page of issues')
+      return await this.get<GithubApiIssue[]>('/repos/elastic/kibana/issues', {
+        state: 'open',
+      })
+    })
+  }
+
+  private async *ittrAll<T>(
+    fetchInitialPage: () => Promise<AxiosResponse<T[]>>,
+  ) {
+    const urls: (string | null)[] = [null]
 
     const fetchNextPage = async (url: string) => {
-      console.log('fetching page of PRs', url)
-      return await this.get<GithubApiPr[]>(url)
+      console.log('fetching next page', url)
+      return await this.get<T[]>(url)
     }
 
     while (urls.length) {

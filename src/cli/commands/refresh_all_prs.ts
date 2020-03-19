@@ -3,7 +3,7 @@ import { runReactors, prReactors } from '../../reactors'
 import { Log, GithubApi } from '../../lib'
 import { CliError } from '../errors'
 
-export async function runRefreshAllCommand(
+export async function runRefreshAllPrsCommand(
   reactorId: string,
   log: Log,
   es: Elasticsearch.Client,

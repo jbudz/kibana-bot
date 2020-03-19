@@ -1,15 +1,7 @@
 import { GithubUser, GithubOrg } from './user'
 import { GithubRepo } from './repo'
-
-interface GithubLabel {
-  id: number
-  node_id: string
-  url: string
-  name: string
-  /** hex code without # */
-  color: string
-  default: boolean
-}
+import { GithubLabel } from './label'
+import { GithubAuthorAssociation } from './author_association'
 
 export interface GithubWebhookPullRequestEvent {
   action:
@@ -90,14 +82,7 @@ export interface GithubApiPr {
    * FIRST_TIMER: Author has not previously committed to GitHub.
    * NONE: Author has no association with the repository.
    */
-  author_association:
-    | 'MEMBER'
-    | 'OWNER'
-    | 'COLLABORATOR'
-    | 'CONTRIBUTOR'
-    | 'FIRST_TIME_CONTRIBUTOR'
-    | 'FIRST_TIMER'
-    | 'NONE'
+  author_association: GithubAuthorAssociation
   draft: boolean
   merged: boolean
   mergeable: boolean
