@@ -7,6 +7,7 @@ import {
   getEsClient,
 } from '../lib'
 import {
+  GithubWebhookIssueEvent,
   GithubWebhookPullRequestEvent,
   GithubWebhookPushEvent,
   GithubWebhookCommitStatus,
@@ -14,6 +15,7 @@ import {
 import {
   runReactors,
   prReactors,
+  issueReactors,
   pushReactors,
   statusReactors,
 } from '../reactors'
@@ -61,7 +63,7 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
     await pause
 
     switch (event) {
-      case 'pull_request':
+      case 'pull_request': {
         const wh = webhook as GithubWebhookPullRequestEvent
         return {
           body: await runReactors(prReactors, {
@@ -76,6 +78,24 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
             },
           }),
         }
+      }
+
+      case 'issues': {
+        const wh = webhook as GithubWebhookIssueEvent
+        return {
+          body: await runReactors(issueReactors, {
+            context: {
+              input: {
+                action: wh.action,
+                issue: wh.issue,
+              },
+              githubApi,
+              log,
+              es: getEsClient(ctx),
+            },
+          }),
+        }
+      }
 
       case 'push':
         return {
