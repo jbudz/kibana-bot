@@ -38,6 +38,6 @@ steps:
         '1',
         '--port',
         '8000',
-        '--update-env-vars',
-        'BOOTSTRAP_GCP_SECRETS=true',
+        '--set-env-vars',
+        'NODE_ENV=production,BOOTSTRAP_GCP_SECRETS=true',
       ]
