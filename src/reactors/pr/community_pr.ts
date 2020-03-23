@@ -42,6 +42,10 @@ export const communityPr = new PrReactor({
     if (isCommunityPr) {
       const slack = createSlackApi(log, es)
       await slack.broadcast(`New community PR! ${pr.html_url}`)
+      await githubApi.setPrLabels(pr.number, [
+        ...pr.labels.map(l => l.name),
+        `💝community`,
+      ])
     }
 
     return {
