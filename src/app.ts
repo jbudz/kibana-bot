@@ -6,10 +6,11 @@ import {
 } from '@spalger/micro-plus'
 
 import {
-  Log,
+  createRootLog,
   assignRootLogger,
   getRequestLogger,
   createRootClient,
+  logEsClientReponseErrors,
   assignEsClient,
   getRequestId,
 } from './lib'
@@ -18,16 +19,19 @@ import { IncomingMessage } from 'http'
 
 const startTimes = new WeakMap<IncomingMessage, number>()
 
-export function app(log: Log) {
-  const es = createRootClient(log)
+export function app() {
+  const es = createRootClient(null)
+  const log = createRootLog(es)
+  logEsClientReponseErrors(es, log)
+
   const ctxForResponse = new WeakMap<IncomingMessage, ReqContext>()
 
-  return createMicroHandler({
+  const handler = createMicroHandler({
     onRequest(ctx) {
       // ensure request id is generated
       getRequestId(ctx)
-      assignRootLogger(ctx, log)
       assignEsClient(ctx, es)
+      assignRootLogger(ctx, log)
     },
     routes,
     hooks: {
@@ -73,4 +77,6 @@ export function app(log: Log) {
       },
     },
   })
+
+  return { log, handler }
 }

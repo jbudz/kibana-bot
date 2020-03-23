@@ -11,7 +11,7 @@ import { runRefreshAllPrsCommand } from './commands/refresh_all_prs'
 import { runRefreshIssueCommand } from './commands/refresh_issue'
 import { runRefreshAllIssuesCommand } from './commands/refresh_all_issues'
 import { runBackportStateCommand } from './commands/backport_state'
-import { log, GithubApi, createRootClient } from '../lib'
+import { createRootLog, GithubApi, createRootClient } from '../lib'
 
 const helpText = `
 node cli [command] [...options]
@@ -32,6 +32,7 @@ CLI to run tasks on Kibana PRs
 
 export async function main() {
   try {
+    const log = createRootLog(null)
     const unknownFlagNames: string[] = []
     const argv = getopts(process.argv.slice(2), {
       boolean: ['only-failures'],

@@ -107,7 +107,7 @@ export class SlackApi {
 
     this.log.info('finishing slack oauth', {
       '@type': 'slackOauthComplete',
-      data: {
+      extra: {
         code,
         redirectUri,
         formData,
@@ -153,7 +153,7 @@ export class SlackApi {
       if (isAxiosErrorResp(error)) {
         this.log.error('failed to finish slack oauth', {
           '@type': 'slackOauthComplete-FailureResponse',
-          data: {
+          extra: {
             config: error.config,
             status: error.response.status,
             headers: error.response.headers,
@@ -163,7 +163,7 @@ export class SlackApi {
       } else {
         this.log.error('failed to send request to slack', {
           '@type': 'slackOauthComplete-RequestFailure',
-          data: {
+          extra: {
             error: error.stack || error.message || error,
           },
         })
@@ -197,7 +197,7 @@ export class SlackApi {
       if (isAxiosErrorResp(error)) {
         this.log.error('send to slack webhook: failure response', {
           '@type': 'slackWebhookFailure',
-          data: {
+          extra: {
             msg: escapedText,
             status: error.response.status,
             headers: error.response.headers,
@@ -209,7 +209,7 @@ export class SlackApi {
 
       this.log.error('send to slack webhook: request failure', {
         '@type': 'slackWebhookFailure',
-        data: {
+        extra: {
           msg: escapedText,
           error: error.stack || error.message || error,
         },
@@ -236,7 +236,7 @@ export class SlackApi {
     if (!webhookUrl || !accessToken) {
       this.log.error('Unable to parse creds from slack auth', {
         '@type': 'parseSlackCredsFailure',
-        data: {
+        extra: {
           encrypted_slack_creds: this.encrypt(authResp),
         },
       })
@@ -265,7 +265,7 @@ export class SlackApi {
     if (!webhookUrl || !accessToken) {
       this.log.error('Unable to parse stored creds from slack creds index', {
         '@type': 'parseSlackCredsFailure',
-        data: {
+        extra: {
           encrypted_slack_creds: encryptedPayload,
         },
       })
@@ -291,7 +291,7 @@ export class SlackApi {
   public async broadcast(msg: string) {
     this.log.info('Broadcasting msg to all slack webhooks', {
       '@type': 'slackBroadcast',
-      data: {
+      extra: {
         msg,
       },
     })
@@ -310,7 +310,7 @@ export class SlackApi {
     for (const failure of failures) {
       this.log.error('Slack broadcast failure', {
         '@type': 'slackBroadcastFailure',
-        data: {
+        extra: {
           stack: failure.reason.stack,
         },
       })
