@@ -11,6 +11,54 @@ const filterRequestType = winston.format((info: any) =>
   info.type === 'request' ? false : info,
 )
 
+const getDevTransports = () => [
+  new winston.transports.Console({
+    format: winston.format.combine(
+      filterRequestType(),
+      winston.format.simple(),
+    ),
+  }),
+]
+
+const getProdTransports = (es: Client) => [
+  new winston.transports.Console(),
+  new WinstonElasticsearch({
+    index: 'kibana-bot-logs',
+    ensureMappingTemplate: false,
+    flushInterval: 500,
+    transformer(event) {
+      const message: string = event.message
+      const level: string = event.level || 'info'
+      const {
+        '@type': type = `level:${level}`,
+        extra = {},
+        ...restOfMeta
+      } = event.meta
+      const timestamp: string = event.timestamp!
+
+      // prevent objects from being used in meta, move them to extra
+      for (const key of Object.keys(restOfMeta)) {
+        if (typeof restOfMeta[key] === 'object' && restOfMeta[key] !== null) {
+          extra[key] = restOfMeta[key]
+          delete restOfMeta[key]
+        }
+      }
+
+      return {
+        '@type': type,
+        '@level': level,
+        '@message': message,
+        '@timestamp': timestamp,
+        meta: restOfMeta,
+        // wrap extra in an array so they're rendered as a single row in Kibana
+        extra: [extra],
+      }
+    },
+    client: es,
+    ...({ apm } as any),
+  }),
+]
+
 export type Log = winston.Logger
 
 export function createRootLog(es: Client | null): Log {
@@ -24,57 +72,10 @@ export function createRootLog(es: Client | null): Log {
       }),
       winston.format.json(),
     ),
-    transports: [
-      new winston.transports.Console({
-        format: winston.format.combine(
-          filterRequestType(),
-          winston.format.simple(),
-        ),
-      }),
-
-      ...(es !== null && process.env.NODE_ENV === 'production'
-        ? [
-            new WinstonElasticsearch({
-              index: 'kibana-bot-logs',
-              ensureMappingTemplate: false,
-              flushInterval: 500,
-              transformer(event) {
-                const message: string = event.message
-                const level: string = event.level || 'info'
-                const {
-                  '@type': type = `level:${level}`,
-                  extra = {},
-                  ...restOfMeta
-                } = event.meta
-                const timestamp: string = event.timestamp!
-
-                // prevent objects from being used in meta, move them to extra
-                for (const key of Object.keys(restOfMeta)) {
-                  if (
-                    typeof restOfMeta[key] === 'object' &&
-                    restOfMeta[key] !== null
-                  ) {
-                    extra[key] = restOfMeta[key]
-                    delete restOfMeta[key]
-                  }
-                }
-
-                return {
-                  '@type': type,
-                  '@level': level,
-                  '@message': message,
-                  '@timestamp': timestamp,
-                  meta: restOfMeta,
-                  // wrap extra in an array so they're rendered as a single row in Kibana
-                  extra: [extra],
-                }
-              },
-              client: es,
-              ...({ apm } as any),
-            }),
-          ]
-        : []),
-    ],
+    transports:
+      es && process.env.NODE_ENV === 'production'
+        ? getProdTransports(es)
+        : getDevTransports(),
   })
 }
 
