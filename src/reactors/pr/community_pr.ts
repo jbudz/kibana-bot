@@ -4,6 +4,7 @@ import { createSlackApi } from '../../lib'
 
 const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'opened',
+  'refresh',
   'ready_for_review',
 ]
 
@@ -25,7 +26,7 @@ export const communityPr = new PrReactor({
     !EXCLUDED_USERS.includes(pr.user.login) &&
     RELEVANT_ACTIONS.includes(action),
 
-  async exec({ input: { pr }, githubApi, log, es }) {
+  async exec({ input: { pr, action }, githubApi, log, es }) {
     // if the pr.author_association indicates that the user has commit access then
     // we don't need to go to the API, but if it doesn't it might be because the pr
     // object sent by the webhook isn't fetched with authentication and can't show
@@ -40,8 +41,11 @@ export const communityPr = new PrReactor({
     )
 
     if (isCommunityPr) {
-      const slack = createSlackApi(log, es)
-      await slack.broadcast(`New community PR! ${pr.html_url}`)
+      if (action !== 'refresh') {
+        const slack = createSlackApi(log, es)
+        await slack.broadcast(`New community PR! ${pr.html_url}`)
+      }
+
       await githubApi.setPrLabels(pr.number, [
         ...pr.labels.map(l => l.name),
         `💝community`,
