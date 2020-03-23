@@ -3,7 +3,8 @@ import { GithubApi } from './github_api'
 import { log } from './log'
 
 describe('getPrsAndFiles()', () => {
-  it('gets expected result', async () => {
+  // Skipped for now since it requires a secret
+  it.skip('gets expected result', async () => {
     const api = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
     await expect(
       api.getPrsAndFiles('3c8ae0aaeb3c5e6c34c16617efa12d3bc8846439', 'closed'),
