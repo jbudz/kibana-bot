@@ -1,7 +1,6 @@
 import apm from 'elastic-apm-node'
 import { Client } from '@elastic/elasticsearch'
 import winston from 'winston'
-import * as Transport from 'winston-transport'
 import WinstonElasticsearch from 'winston-elasticsearch'
 
 import { makeContextCache } from './req_cache'
