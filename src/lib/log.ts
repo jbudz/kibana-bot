@@ -43,7 +43,7 @@ export function createRootLog(es: Client | null): Log {
                 const level: string = event.level || 'info'
                 const {
                   '@type': type = `level:${level}`,
-                  extra,
+                  extra = {},
                   ...restOfMeta
                 } = event.meta
                 const timestamp: string = event.timestamp!
@@ -55,7 +55,7 @@ export function createRootLog(es: Client | null): Log {
                     restOfMeta[key] !== null
                   ) {
                     extra[key] = restOfMeta[key]
-                    restOfMeta[key] = undefined
+                    delete restOfMeta[key]
                   }
                 }
 
