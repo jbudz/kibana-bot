@@ -23,6 +23,8 @@ steps:
         "80",
         "--max-instances",
         "1",
+        "--port",
+        "8000",
         "--set-env-vars",
         "NODE_ENV=production,LOG_TO_CONSOLE=true,ES_URL=http://localhost:1234/,GITHUB_WEBHOOK_SECRET=x,DIRECT_API_PASSWORD=x",
       ]
