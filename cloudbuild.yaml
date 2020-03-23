@@ -2,42 +2,42 @@ steps:
   - name: node:12-slim
     id: install
     entrypoint: yarn
-    args: ["install"]
-    waitFor: ["-"]
+    args: ['install']
+    waitFor: ['-']
 
   - name: node:12-slim
     entrypoint: yarn
-    args: ["test"]
-    waitFor: ["install"]
+    args: ['test']
+    waitFor: ['install']
 
-  - name: "gcr.io/kaniko-project/executor:latest"
+  - name: 'gcr.io/kaniko-project/executor:latest'
     args:
       [
-        "--destination=gcr.io/$PROJECT_ID/kibana-bot:$COMMIT_SHA",
-        "--cache=true",
+        '--destination=gcr.io/$PROJECT_ID/kibana-bot:$COMMIT_SHA',
+        '--cache=true',
       ]
-    waitFor: ["-"]
+    waitFor: ['-']
 
-  - name: "gcr.io/cloud-builders/gcloud"
+  - name: 'gcr.io/cloud-builders/gcloud'
     args:
       [
-        "beta",
-        "run",
-        "deploy",
-        "kibana-bot",
-        "--image",
-        "gcr.io/$PROJECT_ID/kibana-bot:$COMMIT_SHA",
-        "--region",
-        "us-central1",
-        "--platform",
-        "managed",
-        "--allow-unauthenticated",
-        "--concurrency",
-        "80",
-        "--max-instances",
-        "1",
-        "--port",
-        "8000",
-        "--set-env-vars",
-        "NODE_ENV=production,LOG_TO_CONSOLE=true,ES_URL=http://localhost:1234/,GITHUB_WEBHOOK_SECRET=x,DIRECT_API_PASSWORD=x",
+        'beta',
+        'run',
+        'deploy',
+        'kibana-bot',
+        '--image',
+        'gcr.io/$PROJECT_ID/kibana-bot:$COMMIT_SHA',
+        '--region',
+        'us-central1',
+        '--platform',
+        'managed',
+        '--allow-unauthenticated',
+        '--concurrency',
+        '80',
+        '--max-instances',
+        '1',
+        '--port',
+        '8000',
+        '--update-env-vars',
+        'BOOTSTRAP_GCP_SECRETS=true',
       ]
