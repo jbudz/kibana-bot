@@ -39,5 +39,5 @@ steps:
         '--port',
         '8000',
         '--set-env-vars',
-        'NODE_ENV=production,BOOTSTRAP_GCP_SECRETS=true',
+        'NODE_ENV=production,BOOTSTRAP_GCP_SECRETS=true,LOG_TO_CONSOLE=true',
       ]
