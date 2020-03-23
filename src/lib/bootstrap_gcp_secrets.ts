@@ -1,4 +1,4 @@
-import { SecretManagerServiceClient } from '@google-cloud/secret-manager'
+import { SecretManagerServiceClient, v1 } from '@google-cloud/secret-manager'
 import { log } from './log'
 
 export const GCP_SECRET_MAPPING: Record<string, string> = {
@@ -7,7 +7,7 @@ export const GCP_SECRET_MAPPING: Record<string, string> = {
   ES_URL: 'kibana-bot-test-secret-url',
 }
 
-const getSecret = async (client: any, id: string) => {
+const getSecret = async (client: v1.SecretManagerServiceClient, id: string) => {
   const [accessResponse] = await client.accessSecretVersion({
     name: `projects/261553193300/secrets/${id}/versions/latest`,
   })
