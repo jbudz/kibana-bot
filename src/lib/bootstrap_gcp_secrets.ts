@@ -16,7 +16,7 @@ const getSecret = async (client: any, id: string) => {
 }
 
 export async function bootstrapGcpSecrets() {
-  if (process.env.BOOTSTRAP_GCP_SECRETS !== 'true') {
+  if (process.env.NODE_ENV !== 'production') {
     return
   }
 
