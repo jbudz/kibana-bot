@@ -1,9 +1,10 @@
 import micro from 'micro'
 
-import { log } from './lib'
 import { app } from './app'
 
-micro(app(log))
+const { handler, log } = app()
+
+micro(handler)
   .listen(8000, () => {
     log.info('listening on port 8000')
   })

@@ -638,7 +638,7 @@ export class GithubApi {
         this.log.debug('github api response error', {
           '@type': 'githubApiResponseError',
           status: error.response.status,
-          data: {
+          extra: {
             method,
             url,
             params,
@@ -660,7 +660,7 @@ export class GithubApi {
             status: error.response.status,
             delay,
             attempt,
-            data: {
+            extra: {
               method,
               url,
               params,
@@ -681,7 +681,7 @@ export class GithubApi {
         this.log.debug('github api request error', {
           '@type': 'githubApiRequestError',
           errorMessage: error.message,
-          data: {
+          extra: {
             method,
             url,
             params,

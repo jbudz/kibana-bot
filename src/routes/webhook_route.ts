@@ -35,7 +35,7 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
   log.info(`received webhook [${event}]`, {
     '@type': 'receivedWebhook',
     event,
-    data: {
+    extra: {
       webhook,
     },
   })

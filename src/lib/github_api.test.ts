@@ -1,6 +1,8 @@
 import { getConfigVar } from '@spalger/micro-plus'
 import { GithubApi } from './github_api'
-import { log } from './log'
+import { createRootLog } from './log'
+
+const log = createRootLog(null)
 
 describe('getPrsAndFiles()', () => {
   it('gets expected result', async () => {
