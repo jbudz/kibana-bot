@@ -1,66 +1,86 @@
-import { resolve } from 'path'
-
+import apm from 'elastic-apm-node'
+import { Client } from '@elastic/elasticsearch'
 import winston from 'winston'
-import * as Transport from 'winston-transport'
-import { getConfigVar } from '@spalger/micro-plus'
+import WinstonElasticsearch from 'winston-elasticsearch'
 
 import { makeContextCache } from './req_cache'
 import { getRequestId } from './req_id'
-
-const KILOB = 1000
-const MEGAB = 1000 * KILOB
 
 // filter out request objects from logs
 const filterRequestType = winston.format((info: any) =>
   info.type === 'request' ? false : info,
 )
 
-const getTransports = (): Transport[] => {
-  const transports: Transport[] = []
+const getDevTransports = () => [
+  new winston.transports.Console({
+    format: winston.format.combine(
+      filterRequestType(),
+      winston.format.simple(),
+    ),
+  }),
+]
 
-  if (
-    process.env.NODE_ENV === 'development' ||
-    process.env.NODE_ENV === 'test'
-  ) {
-    transports.push(
-      new winston.transports.Console({
-        format: winston.format.combine(
-          filterRequestType(),
-          winston.format.simple(),
-        ),
-      }),
-    )
-  } else if (process.env.LOG_TO_CONSOLE) {
-    transports.push(new winston.transports.Console())
-  } else {
-    transports.push(
-      new winston.transports.File({
-        filename: resolve(getConfigVar('LOGS_DIR'), 'prbot.log'),
-        maxsize: 5 * MEGAB,
-        maxFiles: 5,
-      }),
-    )
-  }
+const getProdTransports = (es: Client) => [
+  new winston.transports.Console(),
+  new WinstonElasticsearch({
+    level: 'debug',
+    index: 'kibana-bot-logs',
+    ensureMappingTemplate: false,
+    flushInterval: 500,
+    transformer(event) {
+      const message: string = event.message
+      const level: string = event.level || 'info'
+      const {
+        '@type': type = `level:${level}`,
+        extra = {},
+        ...restOfMeta
+      } = event.meta
+      const timestamp: string = event.timestamp!
 
-  return transports
-}
+      // prevent objects from being used in meta, move them to extra
+      for (const key of Object.keys(restOfMeta)) {
+        if (typeof restOfMeta[key] === 'object' && restOfMeta[key] !== null) {
+          extra[key] = restOfMeta[key]
+          delete restOfMeta[key]
+        }
+      }
+
+      return {
+        '@type': type,
+        '@level': level,
+        '@message': message,
+        '@timestamp': timestamp,
+        meta: restOfMeta,
+        // wrap extra in an array so they're rendered as a single row in Kibana
+        extra: [extra],
+      }
+    },
+    client: es,
+    ...({ apm } as any),
+  }),
+]
 
 export type Log = winston.Logger
-export const log = winston.createLogger({
-  level: 'debug',
-  defaultMeta: { service: 'prbot' },
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({
-      stack: true,
-    }),
-    winston.format.json(),
-  ),
-  transports: getTransports(),
-})
+
+export function createRootLog(es: Client | null): Log {
+  return winston.createLogger({
+    level: 'debug',
+    defaultMeta: { service: 'prbot' },
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.errors({
+        stack: true,
+      }),
+      winston.format.json(),
+    ),
+    transports:
+      es && process.env.NODE_ENV === 'production'
+        ? getProdTransports(es)
+        : getDevTransports(),
+  })
+}
 
 const rootLoggerCache = makeContextCache<Log>('root logger')
-export const getRootLogger = rootLoggerCache.get
 export const assignRootLogger = rootLoggerCache.assignValue
 
 const reqLoggerCache = makeContextCache('logger', ctx =>

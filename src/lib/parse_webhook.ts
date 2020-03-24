@@ -11,11 +11,10 @@ import {
 import { Log } from '../lib'
 
 const pipelineAsync = promisify(pipeline)
-const WEBHOOK_SECRET = getConfigVar('GITHUB_WEBHOOK_SECRET')
 
 export async function parseWebhook(ctx: ReqContext, log: Log) {
   let body = ''
-  const hmac = Crypto.createHmac('sha1', WEBHOOK_SECRET)
+  const hmac = Crypto.createHmac('sha1', getConfigVar('GITHUB_WEBHOOK_SECRET'))
 
   await pipelineAsync(
     ctx.readBodyAsStream(),

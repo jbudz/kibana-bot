@@ -1,13 +1,14 @@
 import micro from 'micro'
 
-import { log } from './lib/log'
 import { bootstrapGcpSecrets } from './lib/bootstrap_gcp_secrets'
+import { app } from './app'
 
 async function start() {
   try {
     await bootstrapGcpSecrets()
+    const { handler, log } = app()
 
-    micro(require('./app').app(log))
+    micro(handler)
       .listen(8000, () => {
         log.info('listening on port 8000')
       })
@@ -16,8 +17,7 @@ async function start() {
         process.exit(1)
       })
   } catch (error) {
-    log.error(error)
-    process.exit(1)
+    console.error(error)
   }
 }
 

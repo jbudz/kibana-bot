@@ -15,7 +15,7 @@ export const storePushTime = new Reactor<GithubWebhookPushEvent>({
     if (input.forced) {
       log.info('force push', {
         '@type': 'forcePush',
-        data: input,
+        extra: input,
       })
     }
 

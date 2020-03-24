@@ -4,8 +4,6 @@ import {
   UnauthorizedError,
 } from '@spalger/micro-plus'
 
-const PASSWORD = getConfigVar('DIRECT_API_PASSWORD')
-
 export function requireDirectApiPassword(handler: RouteHandler): RouteHandler {
   return async ctx => {
     const [type = '', base64 = ''] = (ctx.header('authorization') || '')
@@ -20,7 +18,11 @@ export function requireDirectApiPassword(handler: RouteHandler): RouteHandler {
       .toString('utf8')
       .split(':')
 
-    if (!username || !password || password !== PASSWORD) {
+    if (
+      !username ||
+      !password ||
+      password !== getConfigVar('DIRECT_API_PASSWORD')
+    ) {
       throw new UnauthorizedError()
     }
 

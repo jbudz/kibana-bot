@@ -11,11 +11,7 @@ export type EsHit<T> = {
   _source: T
 }
 
-export function createRootClient(log: Log) {
-  const es = new Client({
-    node: getConfigVar('ES_URL'),
-  })
-
+export function logEsClientReponseErrors(es: Client, log: Log) {
   es.on('response', (error: any) => {
     if (error && error.meta) {
       const { body, statusCode, headers, warnings } = error.meta as {
@@ -27,7 +23,7 @@ export function createRootClient(log: Log) {
 
       log.error('ES ERROR', {
         '@type': 'esError',
-        data: {
+        extra: {
           body,
           statusCode,
           headers,
@@ -35,12 +31,20 @@ export function createRootClient(log: Log) {
         },
       })
     } else if (error) {
-      log.error('UNKNOWN ES ERROR', {
-        '@type': 'unknownEsError',
-        data: error,
-      })
+      console.error('UNKNOWN ES ERROR')
+      console.error(error)
     }
   })
+}
+
+export function createRootClient(log: Log | null) {
+  const es = new Client({
+    node: getConfigVar('ES_URL'),
+  })
+
+  if (log !== null) {
+    logEsClientReponseErrors(es, log)
+  }
 
   return es
 }

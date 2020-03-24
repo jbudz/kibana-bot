@@ -6,11 +6,21 @@ import { Log } from './log'
 const SECOND = 1000
 const MINUTE = 60 * SECOND
 const HOUR = 60 * MINUTE
-const REMINDER_DELAY = 24 * HOUR
+const REMINDER_DAYS = 2
 
 export const BACKPORT_REMINDER_INDEX = 'prbot-backport-pr-reminders'
 
 const BACKPORT_MISSING_LABEL = 'backport missing'
+
+const DAY = {
+  SUNDAY: 0,
+  MONDAY: 1,
+  TUESDAY: 2,
+  WEDNESDAY: 3,
+  THURSDAY: 4,
+  FRIDAY: 5,
+  SATURDAY: 6,
+}
 
 const createBackportReminderComment = (
   prNumber: number,
@@ -30,12 +40,41 @@ const createBackportReminderComment = (
   return `Looks like this PR has backport PRs but they still haven't been merged. Please merge them ASAP to keep the branches relatively in sync.`
 }
 
+/**
+ * Keep adding 24 hours to `time`, ignoing 24 hour periods that
+ * land on a weekend, so that we will wait N workdays for things
+ * to happen.
+ * @param time
+ * @param days
+ */
+export function addDaysToTimeExcludingWeekends(
+  time: Date,
+  workdays: number,
+): Date {
+  const newTime = new Date(time.valueOf() + HOUR * 24)
+
+  if (
+    newTime.getUTCDay() === DAY.SATURDAY ||
+    newTime.getUTCDay() === DAY.SUNDAY
+  ) {
+    // keep the increment but don't decrement `workdays` because we landed on a weekend
+    return addDaysToTimeExcludingWeekends(newTime, workdays)
+  }
+
+  if (workdays > 1) {
+    // decrement `workdays` and continue to increment `newTime`
+    return addDaysToTimeExcludingWeekends(newTime, workdays - 1)
+  }
+
+  return newTime
+}
+
 export async function scheduleBackportReminder(
   es: Client,
   log: Log,
   prNumber: number,
 ) {
-  const reminderTime = new Date(Date.now() + REMINDER_DELAY)
+  const reminderTime = addDaysToTimeExcludingWeekends(new Date(), REMINDER_DAYS)
   log.info(
     `scheduling pr backport reminder [pr ${prNumber}] [at ${reminderTime.toUTCString()}]`,
   )
