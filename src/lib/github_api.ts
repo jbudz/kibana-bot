@@ -763,7 +763,7 @@ export class GithubApi {
     this.rateLimitLogThrottled.timer.unref()
 
     this.log.info(`rate limit ${remaining}/${total}`, {
-      type: 'githubRateLimit',
+      '@type': 'githubRateLimit',
       rateLimit: {
         remaining,
         total,
