@@ -23,6 +23,7 @@ const getDevTransports = () => [
 const getProdTransports = (es: Client) => [
   new winston.transports.Console(),
   new WinstonElasticsearch({
+    level: 'debug',
     index: 'kibana-bot-logs',
     ensureMappingTemplate: false,
     flushInterval: 500,
