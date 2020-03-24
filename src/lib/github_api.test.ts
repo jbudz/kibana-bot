@@ -5,8 +5,12 @@ import { createRootLog } from './log'
 const log = createRootLog(null)
 
 describe('getPrsAndFiles()', () => {
-  // Skipped for now since it requires a secret
-  it.skip('gets expected result', async () => {
+  it('gets expected result', async () => {
+    if (!process.env.GITHUB_SECRET) {
+      console.error('disabling test because GITHUB_SECRET is missing from env')
+      return
+    }
+
     const api = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
     await expect(
       api.getPrsAndFiles('3c8ae0aaeb3c5e6c34c16617efa12d3bc8846439', 'closed'),
