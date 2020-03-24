@@ -764,10 +764,8 @@ export class GithubApi {
 
     this.log.info(`rate limit ${remaining}/${total}`, {
       '@type': 'githubRateLimit',
-      rateLimit: {
-        remaining,
-        total,
-      },
+      rateLimitRemaining: remaining,
+      rateLimitTotal: total,
     })
   }
 }
