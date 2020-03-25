@@ -1,5 +1,7 @@
 import { SecretManagerServiceClient, v1 } from '@google-cloud/secret-manager'
-import { log } from './log'
+import { createRootLog } from './log'
+
+const log = createRootLog(null)
 
 export const GCP_SECRET_MAPPING: Record<string, string> = {
   DIRECT_API_PASSWORD: 'kibana-bot-test-secret',
@@ -30,9 +32,9 @@ export async function bootstrapGcpSecrets() {
       envVars.map(key => getSecret(client, GCP_SECRET_MAPPING[key])),
     )
 
-    envVars.forEach((envVar, index) => {
-      process.env[envVar] = values[index]
-    })
+    for (let i = 0; i < envVars.length; i++) {
+      process.env[envVars[i]] = values[i]
+    }
   } catch (ex) {
     log.error('Error bootstrapping secrets from GCP', ex)
     process.exit(1)

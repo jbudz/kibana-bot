@@ -13,6 +13,7 @@ import {
   logEsClientReponseErrors,
   assignEsClient,
   getRequestId,
+  checkEnvironment,
 } from './lib'
 import { routes } from './routes'
 import { IncomingMessage } from 'http'
@@ -20,6 +21,7 @@ import { IncomingMessage } from 'http'
 const startTimes = new WeakMap<IncomingMessage, number>()
 
 export function app() {
+  checkEnvironment()
   const es = createRootClient(null)
   const log = createRootLog(es)
   logEsClientReponseErrors(es, log)
