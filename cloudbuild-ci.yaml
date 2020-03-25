@@ -1,0 +1,19 @@
+steps:
+  - name: node:12-slim
+    id: install
+    entrypoint: yarn
+    args: ['install']
+    waitFor: ['-']
+
+  - name: node:12-slim
+    entrypoint: yarn
+    args: ['test']
+    waitFor: ['install']
+
+  - name: 'gcr.io/kaniko-project/executor:latest'
+    args:
+      [
+        '--destination=gcr.io/$PROJECT_ID/kibana-bot:$COMMIT_SHA',
+        '--cache=true',
+      ]
+    waitFor: ['-']
