@@ -37,6 +37,11 @@ interface CommitStatusOptions {
   target_url?: string
 }
 
+type RetryOptions = {
+  attempt?: number
+  forceRetries?: boolean
+}
+
 export type FileReq = {
   id: number
   filesEndCursor: string
@@ -126,10 +131,14 @@ export class GithubApi {
     return resp.data
   }
 
-  public async getPr(prId: number) {
+  public async getPr(prId: number, options?: { forceRetries?: boolean }) {
     const prIdComponent = encodeURIComponent(`${prId}`)
     const resp = await this.get<GithubApiPr>(
       `/repos/elastic/kibana/pulls/${prIdComponent}`,
+      undefined,
+      {
+        forceRetries: options?.forceRetries,
+      },
     )
     return resp.data
   }
@@ -626,12 +635,22 @@ export class GithubApi {
   }
 
   private async req<Result = any>(
-    method: Method,
-    url: string,
-    params?: { [key: string]: any },
-    body?: { [key: string]: any },
-    attempt = 1,
+    options: {
+      method: Method
+      url: string
+      params?: { [key: string]: any }
+      body?: { [key: string]: any }
+    } & RetryOptions,
   ): Promise<AxiosResponse<Result>> {
+    const {
+      method,
+      url,
+      params,
+      body,
+      attempt = 1,
+      forceRetries = false,
+    } = options
+
     try {
       const resp = await this.ax({
         method,
@@ -663,7 +682,7 @@ export class GithubApi {
           },
         })
 
-        if (this.shouldRetry(error, url, method, attempt)) {
+        if (forceRetries || this.shouldRetry(error, url, method, attempt)) {
           const delay = 2000 * attempt
 
           this.log.debug('automatically retrying request', {
@@ -686,7 +705,10 @@ export class GithubApi {
           })
 
           await sleep(delay)
-          return this.req<Result>(method, url, params, body, attempt + 1)
+          return this.req<Result>({
+            ...options,
+            attempt: attempt + 1,
+          })
         }
       } else if (isAxiosErrorReq(error)) {
         this.log.debug('github api request error', {
@@ -736,16 +758,18 @@ export class GithubApi {
   private async get<Result = any>(
     url: string,
     params?: { [key: string]: any },
+    options?: RetryOptions,
   ) {
-    return this.req<Result>('get', url, params)
+    return this.req<Result>({ ...options, method: 'get', url, params })
   }
 
   private async post<Result = any>(
     url: string,
     params?: { [key: string]: any },
     body?: { [key: string]: any },
+    options?: RetryOptions,
   ) {
-    return this.req<Result>('post', url, params, body)
+    return this.req<Result>({ ...options, method: 'post', url, params, body })
   }
 
   private rateLimitLogThrottled?: {
