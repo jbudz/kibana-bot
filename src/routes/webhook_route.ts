@@ -65,12 +65,19 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
     switch (event) {
       case 'pull_request': {
         const wh = webhook as GithubWebhookPullRequestEvent
+        // fetch the current PR state, when PRs are first created
+        // we get a bunch of requests at once so we hope this will
+        // ensure PRs are in the correct state when we inspect them.
+        const pr = await githubApi.getPr(wh.pull_request.number, {
+          forceRetries: true,
+        })
+
         return {
           body: await runReactors(prReactors, {
             context: {
               input: {
                 action: wh.action,
-                pr: wh.pull_request,
+                pr,
               },
               githubApi,
               log,
