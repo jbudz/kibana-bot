@@ -415,6 +415,8 @@ export class GithubApi {
   public async getBackportState(prId: number) {
     type PrRef = {
       __typename: 'PullRequest'
+      /** title of the referenced PR */
+      title: string
       /** The possible states of a pull request. */
       state: 'OPEN' | 'CLOSED' | 'MERGED'
       /** Identifies the name of the base Ref associated with the pull request, even if the ref has been deleted. */
@@ -494,6 +496,7 @@ export class GithubApi {
                       source {
                         __typename
                         ... on PullRequest {
+                          title
                           state
                           baseRefName
                           commits(first: 20) {
@@ -531,6 +534,18 @@ export class GithubApi {
 
     const getFirstLine = (str: string) => str.split('\n')[0]
     const firstLineOfMergeCommit = getFirstLine(pr.mergeCommit.message)
+    const isRefToBackportPr = (prRef: PrRef) => {
+      const includesUneditedMergeCommit = prRef.commits.edges.some(
+        commit =>
+          getFirstLine(commit.node.commit.message) === firstLineOfMergeCommit,
+      )
+
+      const matchesPrTitle =
+        prRef.title.includes(firstLineOfMergeCommit) &&
+        prRef.title.includes(`${prId}`)
+
+      return includesUneditedMergeCommit || matchesPrTitle
+    }
 
     return {
       labels: pr.labels?.nodes?.map(n => n.name) ?? [],
@@ -540,11 +555,7 @@ export class GithubApi {
         .filter(
           (prRef): prRef is PendingOrOpenPrRef =>
             (prRef.state === 'MERGED' || prRef.state === 'OPEN') &&
-            prRef.commits.edges.some(
-              commit =>
-                getFirstLine(commit.node.commit.message) ===
-                firstLineOfMergeCommit,
-            ),
+            isRefToBackportPr(prRef),
         )
         .map(prRef => ({
           branch: prRef.baseRefName,
