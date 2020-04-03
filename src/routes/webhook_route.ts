@@ -19,8 +19,11 @@ import {
   pushReactors,
   statusReactors,
 } from '../reactors'
+import { LRUMap } from 'lru_map'
 
 const queues = new Map<string, Array<() => void>>()
+const lastPrHookTimes = new LRUMap<number, number>(1000)
+const SECOND = 1000
 
 export const webhookRoute = new Route('POST', '/webhook', async ctx => {
   const log = getRequestLogger(ctx)
@@ -65,12 +68,23 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
     switch (event) {
       case 'pull_request': {
         const wh = webhook as GithubWebhookPullRequestEvent
-        // fetch the current PR state, when PRs are first created
-        // we get a bunch of requests at once so we hope this will
-        // ensure PRs are in the correct state when we inspect them.
-        const pr = await githubApi.getPr(wh.pull_request.number, {
-          forceRetries: true,
-        })
+        const prId = wh.pull_request.number
+
+        // determine and update the most recent webhook time for this PR
+        const time = Date.now()
+        const lastTime = lastPrHookTimes.get(prId)
+        lastPrHookTimes.set(prId, time)
+
+        /**
+         * fetch the current PR state if we received a webhook for this
+         * PR in the last 30 seconds, when PRs are first created we get
+         * a bunch of requests at once so we hope this will ensure PRs
+         * are in the correct state when we inspect them.
+         */
+        const pr =
+          lastTime && lastTime > time - 30 * SECOND
+            ? await githubApi.getPr(prId, { forceRetries: true })
+            : wh.pull_request
 
         return {
           body: await runReactors(prReactors, {
