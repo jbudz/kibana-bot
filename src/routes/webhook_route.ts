@@ -75,16 +75,17 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
         const lastTime = lastPrHookTimes.get(prId)
         lastPrHookTimes.set(prId, time)
 
+        const prFromApi = Boolean(lastTime && lastTime > time - 30 * SECOND)
+
         /**
          * fetch the current PR state if we received a webhook for this
          * PR in the last 30 seconds, when PRs are first created we get
          * a bunch of requests at once so we hope this will ensure PRs
          * are in the correct state when we inspect them.
          */
-        const pr =
-          lastTime && lastTime > time - 30 * SECOND
-            ? await githubApi.getPr(prId, { forceRetries: true })
-            : wh.pull_request
+        const pr = prFromApi
+          ? await githubApi.getPr(prId, { forceRetries: true })
+          : wh.pull_request
 
         return {
           body: await runReactors(prReactors, {
@@ -92,6 +93,7 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
               input: {
                 action: wh.action,
                 pr,
+                prFromApi,
               },
               githubApi,
               log,

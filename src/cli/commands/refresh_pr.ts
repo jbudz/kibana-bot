@@ -30,6 +30,7 @@ export async function runRefreshPrCommand(
         input: {
           action: 'refresh',
           pr,
+          prFromApi: true,
         },
         githubApi,
         log,

@@ -25,6 +25,7 @@ export async function runRefreshAllPrsCommand(
           input: {
             action: 'refresh',
             pr,
+            prFromApi: true,
           },
         },
       }),
