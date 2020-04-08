@@ -6,7 +6,8 @@ import { Log } from './log'
 const SECOND = 1000
 const MINUTE = 60 * SECOND
 const HOUR = 60 * MINUTE
-const REMINDER_DAYS = 2
+const FIRST_REMINDER_DAYS = 2
+const FOLLOW_UP_REMINDER_DAYS = 1
 
 export const BACKPORT_REMINDER_INDEX = 'prbot-backport-pr-reminders'
 
@@ -74,14 +75,23 @@ export async function scheduleBackportReminder(
   log: Log,
   prNumber: number,
 ) {
-  const reminderTime = addDaysToTimeExcludingWeekends(new Date(), REMINDER_DAYS)
+  const selectParams = {
+    index: BACKPORT_REMINDER_INDEX,
+    id: `pr_${prNumber}`,
+  }
+
+  const existsResp = await es.exists({ ...selectParams })
+  const reminderTime = addDaysToTimeExcludingWeekends(
+    new Date(),
+    existsResp.body === true ? FOLLOW_UP_REMINDER_DAYS : FIRST_REMINDER_DAYS,
+  )
+
   log.info(
     `scheduling pr backport reminder [pr ${prNumber}] [at ${reminderTime.toUTCString()}]`,
   )
 
   await es.index({
-    index: BACKPORT_REMINDER_INDEX,
-    id: `pr_${prNumber}`,
+    ...selectParams,
     body: {
       prNumber,
       '@timestamp': reminderTime,
