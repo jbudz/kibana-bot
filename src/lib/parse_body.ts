@@ -6,11 +6,28 @@ import { getRequestLogger } from './log'
 
 const pipelineAsync = Util.promisify(Stream.pipeline)
 
-type UnknownObj<T extends {}> = {
-  [k in keyof T]: unknown
+class Fields<T> {
+  private keys: Set<keyof T>
+
+  constructor(private input: Record<keyof T, unknown>) {
+    this.keys = new Set(Object.keys(input) as Array<keyof T>)
+  }
+
+  use(key: keyof T) {
+    if (this.keys.has(key)) {
+      this.keys.delete(key)
+      return this.input[key]
+    }
+  }
+
+  extraKeys() {
+    if (this.keys.size) {
+      return Array.from(this.keys)
+    }
+  }
 }
 
-type Transform<T extends {}> = (parsed: UnknownObj<T>) => T | Promise<T>
+type Transform<T extends {}> = (fields: Fields<T>) => T | Promise<T>
 
 export async function parseBody<T extends {}>(
   ctx: ReqContext,
@@ -52,7 +69,7 @@ export async function parseBody<T extends {}>(
   }
 
   try {
-    return await transform(body as UnknownObj<T>)
+    return await transform(new Fields(body as Record<keyof T, unknown>))
   } catch (error) {
     if (error instanceof BadRequestError) {
       throw new BadRequestError(`body parse error: ${error.message}`)

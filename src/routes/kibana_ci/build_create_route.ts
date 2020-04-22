@@ -8,7 +8,6 @@ interface Body {
   jenkinsJobId: string
   branch: string
   commitSha: string
-  startedAt: string
 }
 
 export const buildCreateRoute = new Route(
@@ -18,46 +17,45 @@ export const buildCreateRoute = new Route(
     const log = getRequestLogger(ctx)
     const es = getEsClient(ctx)
 
-    const body = await parseBody<Body>(ctx, input => {
-      const jenkinsJobName = input.jenkinsJobName
+    const body = await parseBody<Body>(ctx, fields => {
+      const jenkinsJobName = fields.use('jenkinsJobName')
       if (typeof jenkinsJobName !== 'string' || jenkinsJobName.length === 0) {
         throw new BadRequestError(
           '`jenkinsJobName` property must be a non-empty string',
         )
       }
 
-      const jenkinsJobId = input.jenkinsJobId
+      const jenkinsJobId = fields.use('jenkinsJobId')
       if (typeof jenkinsJobId !== 'string' || jenkinsJobId.length === 0) {
         throw new BadRequestError(
           '`jenkinsJobId` property must be a non-empty string',
         )
       }
 
-      const branch = input.branch
+      const branch = fields.use('branch')
       if (typeof branch !== 'string' || branch.length === 0) {
         throw new BadRequestError(
           '`branch` property must be a non-empty string',
         )
       }
 
-      const commitSha = input.commitSha
+      const commitSha = fields.use('commitSha')
       if (typeof commitSha !== 'string' || commitSha.length === 0) {
         throw new BadRequestError(
           '`commitSha` property must be a non-empty string',
         )
       }
 
-      const startedAt = input.startedAt
-      if (typeof startedAt !== 'string' || startedAt.length === 0) {
+      const extras = fields.extraKeys()
+      if (extras?.length) {
         throw new BadRequestError(
-          `\`startedAt\` property must be a non-empty string in simple IS0-8601 format (ie ${new Date().toJSON()})`,
+          `unexpected fields in body: ${extras.join(', ')}`,
         )
       }
 
       return {
         jenkinsJobName,
         jenkinsJobId,
-        startedAt,
         branch,
         commitSha,
       }
@@ -67,7 +65,10 @@ export const buildCreateRoute = new Route(
 
     const resp = await es.index({
       index: 'kibana-ci-stats__builds',
-      body,
+      body: {
+        ...body,
+        startedAt: new Date(),
+      },
     })
 
     const id = resp.body._id
