@@ -15,7 +15,7 @@ interface Body {
 
 export const buildCreateRoute = new Route(
   'PUT',
-  '/ci/build',
+  '/build',
   requireApiKey(async ctx => {
     const log = getRequestLogger(ctx)
     const es = getEsClient(ctx)

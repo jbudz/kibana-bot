@@ -6,7 +6,7 @@ import { requireApiKey } from '../../lib/kibana_ci'
 
 export const buildCompleteRoute = new Route(
   'POST',
-  '/ci/build/_complete',
+  '/build/_complete',
   requireApiKey(async ctx => {
     const buildId = ctx.query.buildId
     if (typeof buildId !== 'string') {
