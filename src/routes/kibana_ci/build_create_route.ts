@@ -1,12 +1,10 @@
 import { Route, BadRequestError } from '@spalger/micro-plus'
 import * as Uuid from 'uuid'
-import Es from '@elastic/elasticsearch'
 
 import { getRequestLogger, getEsClient, parseBody } from '../../lib'
 import { requireApiKey } from '../../lib/kibana_ci'
 
 interface Body {
-  id?: string
   jenkinsJobName: string
   jenkinsJobId: string
   branch: string
@@ -14,23 +12,13 @@ interface Body {
 }
 
 export const buildCreateRoute = new Route(
-  'PUT',
+  'POST',
   '/build',
   requireApiKey(async ctx => {
     const log = getRequestLogger(ctx)
     const es = getEsClient(ctx)
 
     const body = await parseBody<Body>(ctx, fields => {
-      const id = fields.use('id')
-      if (id !== undefined) {
-        if (typeof id !== 'string') {
-          throw new BadRequestError('`id` must be a string when defined')
-        }
-        if (id.length !== 36) {
-          throw new BadRequestError('`id` must be a 36 character UUID')
-        }
-      }
-
       const jenkinsJobName = fields.use('jenkinsJobName')
       if (typeof jenkinsJobName !== 'string' || jenkinsJobName.length === 0) {
         throw new BadRequestError(
@@ -67,7 +55,6 @@ export const buildCreateRoute = new Route(
       }
 
       return {
-        id,
         jenkinsJobName,
         jenkinsJobId,
         branch,
@@ -76,7 +63,7 @@ export const buildCreateRoute = new Route(
     })
 
     log.info('build received', body)
-    const id = body.id || Uuid.v4()
+    const id = Uuid.v4()
     log.info('using id', id)
 
     try {
@@ -89,14 +76,6 @@ export const buildCreateRoute = new Route(
         },
       })
     } catch (error) {
-      if (
-        error instanceof Es.errors.ResponseError &&
-        error.statusCode === 409 &&
-        body.id
-      ) {
-        throw new BadRequestError('specified uuid is not unique')
-      }
-
       throw new Error('unable to create the build, try again later')
     }
 
