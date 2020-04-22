@@ -51,7 +51,7 @@ export async function parseBody<T extends {}>(
     }),
   )
 
-  if (json.length) {
+  if (!json.length) {
     log.error('missing request body')
     throw new BadRequestError(`request body is required`)
   }
