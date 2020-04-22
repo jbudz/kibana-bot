@@ -60,7 +60,9 @@ export async function parseBody<T extends {}>(
   try {
     body = JSON.parse(json)
   } catch (error) {
-    log.error('invalid request body:', json)
+    log.error('invalid request body:', {
+      extra: { json },
+    })
     throw new BadRequestError(`request body is not valid json`)
   }
 
