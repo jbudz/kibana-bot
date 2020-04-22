@@ -1,4 +1,5 @@
 import { Route, BadRequestError } from '@spalger/micro-plus'
+import * as Uuid from 'uuid'
 
 import { getRequestLogger, getEsClient, parseBody } from '../../lib'
 import { requireApiKey } from '../../lib/kibana_ci'
@@ -62,17 +63,17 @@ export const buildCreateRoute = new Route(
     })
 
     log.info('build received', body)
+    const id = Uuid.v4()
+    log.info('assigning id:', id)
 
-    const resp = await es.index({
+    await es.create({
       index: 'kibana-ci-stats__builds',
+      id,
       body: {
         ...body,
         startedAt: new Date(),
       },
     })
-
-    const id = resp.body._id
-    log.info('id of build:', id)
 
     return {
       status: 201,
