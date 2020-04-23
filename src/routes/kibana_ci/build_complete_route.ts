@@ -1,8 +1,12 @@
 import { Route, BadRequestError, NotFoundError } from '@spalger/micro-plus'
 import { errors } from '@elastic/elasticsearch'
 
-import { getEsClient } from '../../lib'
+import { getEsClient, parseBody } from '../../lib'
 import { requireApiKey } from '../../lib/kibana_ci'
+
+interface Body {
+  result: string
+}
 
 export const buildCompleteRoute = new Route(
   'POST',
@@ -12,6 +16,12 @@ export const buildCompleteRoute = new Route(
     if (typeof buildId !== 'string') {
       throw new BadRequestError('missing `buildId` query param')
     }
+
+    const body = await parseBody<Body>(ctx, fields => {
+      return {
+        result: fields.string('result'),
+      }
+    })
 
     const es = getEsClient(ctx)
     try {
@@ -25,9 +35,14 @@ export const buildCompleteRoute = new Route(
               if (ctx._source.completedAt == null) {
                 ctx._source.completedAt = params.date
               }
+
+              if (ctx._source.result == null) {
+                ctx._source.result = params.result
+              }
             `,
             params: {
               date: new Date(),
+              result: body.result,
             },
           },
         },

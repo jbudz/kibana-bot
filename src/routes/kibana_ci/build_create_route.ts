@@ -1,4 +1,4 @@
-import { Route, BadRequestError } from '@spalger/micro-plus'
+import { Route } from '@spalger/micro-plus'
 import * as Uuid from 'uuid'
 
 import { getRequestLogger, getEsClient, parseBody } from '../../lib'
@@ -27,68 +27,13 @@ export const buildCreateRoute = new Route(
     const es = getEsClient(ctx)
 
     const body = await parseBody<Body>(ctx, fields => {
-      const jenkinsJobName = fields.use('jenkinsJobName')
-      if (typeof jenkinsJobName !== 'string' || jenkinsJobName.length === 0) {
-        throw new BadRequestError(
-          '`jenkinsJobName` property must be a non-empty string',
-        )
-      }
-
-      const jenkinsJobId = fields.use('jenkinsJobId')
-      if (typeof jenkinsJobId !== 'string' || jenkinsJobId.length === 0) {
-        throw new BadRequestError(
-          '`jenkinsJobId` property must be a non-empty string',
-        )
-      }
-
-      const branch = fields.use('branch')
-      if (typeof branch !== 'string' || branch.length === 0) {
-        throw new BadRequestError(
-          '`branch` property must be a non-empty string',
-        )
-      }
-
-      const commitSha = fields.use('commitSha')
-      if (typeof commitSha !== 'string' || commitSha.length === 0) {
-        throw new BadRequestError(
-          '`commitSha` property must be a non-empty string',
-        )
-      }
-
-      const prId = fields.use('prId')
-      if (
-        prId !== undefined &&
-        (typeof prId !== 'string' || prId.length === 0)
-      ) {
-        throw new BadRequestError(
-          '`prId` property must be a non-empty string when it is defined',
-        )
-      }
-
-      const prTargetBranch = fields.use('prTargetBranch')
-      if (
-        prTargetBranch !== undefined &&
-        (typeof prTargetBranch !== 'string' || prTargetBranch.length === 0)
-      ) {
-        throw new BadRequestError(
-          '`prTargetBranch` property must be a non-empty string when it is defined',
-        )
-      }
-
-      const extras = fields.extraKeys()
-      if (extras?.length) {
-        throw new BadRequestError(
-          `unexpected fields in body: ${extras.join(', ')}`,
-        )
-      }
-
       return {
-        jenkinsJobName,
-        jenkinsJobId,
-        branch,
-        commitSha,
-        prId,
-        prTargetBranch,
+        jenkinsJobName: fields.string('jenkinsJobName'),
+        jenkinsJobId: fields.string('jenkinsJobId'),
+        branch: fields.string('branch'),
+        commitSha: fields.string('commitSha'),
+        prId: fields.optionalString('prId'),
+        prTargetBranch: fields.optionalString('prTargetBranch'),
       }
     })
 

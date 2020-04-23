@@ -13,13 +13,39 @@ class Fields<T> {
     this.keys = new Set(Object.keys(input) as Array<keyof T>)
   }
 
-  use(key: keyof T) {
+  use(key: keyof T): unknown {
     if (this.keys.has(key)) {
       this.keys.delete(key)
       const value = this.input[key]
 
       return value == null ? undefined : this.input[key]
     }
+  }
+
+  string(key: keyof T) {
+    const value = this.use(key)
+
+    if (typeof value === 'string' && value.length !== 0) {
+      return value
+    }
+
+    throw new BadRequestError(`\`${key}\` property must be a non-empty string`)
+  }
+
+  optionalString(key: keyof T) {
+    const value = this.use(key)
+
+    if (value === undefined) {
+      return value
+    }
+
+    if (typeof value === 'string' && value.length !== 0) {
+      return value
+    }
+
+    throw new BadRequestError(
+      `\`${key}\` property must be a non-empty string when it is defined`,
+    )
   }
 
   extraKeys() {
@@ -73,8 +99,19 @@ export async function parseBody<T extends {}>(
     throw new BadRequestError(`request body must be an object`)
   }
 
+  const fields = new Fields(body as Record<keyof T, unknown>)
+
   try {
-    return await transform(new Fields(body as Record<keyof T, unknown>))
+    const parsed = await transform(fields)
+
+    const extras = fields.extraKeys()
+    if (extras?.length) {
+      throw new BadRequestError(
+        `unexpected fields in body: ${extras.join(', ')}`,
+      )
+    }
+
+    return parsed
   } catch (error) {
     if (error instanceof BadRequestError) {
       log.error('request body validation failed', {
