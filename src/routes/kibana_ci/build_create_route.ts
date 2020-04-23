@@ -9,6 +9,15 @@ interface Body {
   jenkinsJobId: string
   branch: string
   commitSha: string
+  prId?: string
+  prTargetBranch?: string
+  prSourceBranch?: string
+}
+
+const allOrNothing = (...args: Array<any>) => {
+  const allUndefined = args.every(arg => arg === undefined)
+  const noneUndefined = args.every(arg => arg !== undefined)
+  return allUndefined || noneUndefined
 }
 
 export const buildCreateRoute = new Route(
@@ -47,6 +56,36 @@ export const buildCreateRoute = new Route(
         )
       }
 
+      const prId = fields.use('prId')
+      if (
+        prId !== undefined &&
+        (typeof prId !== 'string' || prId.length === 0)
+      ) {
+        throw new BadRequestError(
+          '`prId` property must be a non-empty string when it is defined',
+        )
+      }
+
+      const prTargetBranch = fields.use('prTargetBranch')
+      if (
+        prTargetBranch !== undefined &&
+        (typeof prTargetBranch !== 'string' || prTargetBranch.length === 0)
+      ) {
+        throw new BadRequestError(
+          '`prTargetBranch` property must be a non-empty string when it is defined',
+        )
+      }
+
+      const prSourceBranch = fields.use('prSourceBranch')
+      if (
+        prSourceBranch !== undefined &&
+        (typeof prSourceBranch !== 'string' || prSourceBranch.length === 0)
+      ) {
+        throw new BadRequestError(
+          '`prSourceBranch` property must be a non-empty string when it is defined',
+        )
+      }
+
       const extras = fields.extraKeys()
       if (extras?.length) {
         throw new BadRequestError(
@@ -59,12 +98,26 @@ export const buildCreateRoute = new Route(
         jenkinsJobId,
         branch,
         commitSha,
+        prId,
+        prTargetBranch,
+        prSourceBranch,
       }
     })
 
-    log.info('build received', body)
     const id = Uuid.v4()
-    log.info('using id', id)
+    log.info('creating build', {
+      '@type': 'creating build',
+      extra: {
+        id,
+        body,
+      },
+    })
+
+    if (!allOrNothing(body.prId, body.prTargetBranch, body.prSourceBranch)) {
+      log.info('incomplete pr details sent with build', {
+        '@type': 'incomplete pr details',
+      })
+    }
 
     try {
       await es.create({
