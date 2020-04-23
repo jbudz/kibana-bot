@@ -12,9 +12,9 @@ export const buildCompleteRoute = new Route(
   'POST',
   '/build/_complete',
   requireApiKey(async ctx => {
-    const buildId = ctx.query.buildId
-    if (typeof buildId !== 'string') {
-      throw new BadRequestError('missing `buildId` query param')
+    const id = ctx.query.id
+    if (typeof id !== 'string') {
+      throw new BadRequestError('missing `id` query param')
     }
 
     const body = await parseBody<Body>(ctx, fields => {
@@ -27,7 +27,7 @@ export const buildCompleteRoute = new Route(
     try {
       await es.update({
         index: 'kibana-ci-stats__builds',
-        id: buildId,
+        id,
         body: {
           script: {
             lang: 'painless',
