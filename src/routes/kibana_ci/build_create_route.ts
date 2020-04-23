@@ -11,7 +11,6 @@ interface Body {
   commitSha: string
   prId?: string
   prTargetBranch?: string
-  prSourceBranch?: string
 }
 
 const allOrNothing = (...args: Array<any>) => {
@@ -76,16 +75,6 @@ export const buildCreateRoute = new Route(
         )
       }
 
-      const prSourceBranch = fields.use('prSourceBranch')
-      if (
-        prSourceBranch !== undefined &&
-        (typeof prSourceBranch !== 'string' || prSourceBranch.length === 0)
-      ) {
-        throw new BadRequestError(
-          '`prSourceBranch` property must be a non-empty string when it is defined',
-        )
-      }
-
       const extras = fields.extraKeys()
       if (extras?.length) {
         throw new BadRequestError(
@@ -100,7 +89,6 @@ export const buildCreateRoute = new Route(
         commitSha,
         prId,
         prTargetBranch,
-        prSourceBranch,
       }
     })
 
@@ -113,7 +101,7 @@ export const buildCreateRoute = new Route(
       },
     })
 
-    if (!allOrNothing(body.prId, body.prTargetBranch, body.prSourceBranch)) {
+    if (!allOrNothing(body.prId, body.prTargetBranch)) {
       log.info('incomplete pr details sent with build', {
         '@type': 'incomplete pr details',
       })
