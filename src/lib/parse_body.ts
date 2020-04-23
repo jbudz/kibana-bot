@@ -60,7 +60,8 @@ export async function parseBody<T extends {}>(
   try {
     body = JSON.parse(json)
   } catch (error) {
-    log.error('invalid request body:', {
+    log.error('invalid json body', {
+      '@type': 'invalid json body',
       extra: { json },
     })
     throw new BadRequestError(`request body is not valid json`)
@@ -74,6 +75,11 @@ export async function parseBody<T extends {}>(
     return await transform(new Fields(body as Record<keyof T, unknown>))
   } catch (error) {
     if (error instanceof BadRequestError) {
+      log.error('request body validation failed', {
+        '@type': 'request body validation failed',
+        extra: { body },
+      })
+
       throw new BadRequestError(`body parse error: ${error.message}`)
     }
 
