@@ -16,7 +16,9 @@ class Fields<T> {
   use(key: keyof T) {
     if (this.keys.has(key)) {
       this.keys.delete(key)
-      return this.input[key]
+      const value = this.input[key]
+
+      return value == null ? undefined : this.input[key]
     }
   }
 
