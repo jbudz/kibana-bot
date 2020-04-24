@@ -7,8 +7,8 @@ import { requireApiKey } from '../../lib/kibana_ci'
 interface Body {
   jenkinsJobName: string
   jenkinsJobId: string
-  branch: string
-  commitSha: string
+  branch?: string
+  commitSha?: string
   prId?: string
   prTargetBranch?: string
 }
@@ -30,8 +30,8 @@ export const buildCreateRoute = new Route(
       return {
         jenkinsJobName: fields.string('jenkinsJobName'),
         jenkinsJobId: fields.string('jenkinsJobId'),
-        branch: fields.string('branch'),
-        commitSha: fields.string('commitSha'),
+        branch: fields.optionalString('branch'),
+        commitSha: fields.optionalString('commitSha'),
         prId: fields.optionalString('prId'),
         prTargetBranch: fields.optionalString('prTargetBranch'),
       }
