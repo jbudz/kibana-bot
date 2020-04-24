@@ -6,6 +6,7 @@ import { requireApiKey } from '../../lib/kibana_ci'
 interface Body {
   branch: string
   commit: string
+  targetBranch?: string
   mergeBase?: string
 }
 
@@ -22,6 +23,7 @@ export const addGitInfoRoute = new Route(
       return {
         branch: fields.string('branch'),
         commit: fields.string('commit'),
+        targetBranch: fields.optionalString('targetBranch'),
         mergeBase: fields.optionalString('mergeBase'),
       }
     })
@@ -40,6 +42,9 @@ export const addGitInfoRoute = new Route(
             if (ctx._source.commit == null) {
               ctx._source.commit = params.commit
             }
+            if (ctx._source.targetBranch == null) {
+              ctx._source.targetBranch = params.targetBranch
+            }
             if (ctx._source.mergeBase == null) {
               ctx._source.mergeBase = params.mergeBase
             }
@@ -47,6 +52,7 @@ export const addGitInfoRoute = new Route(
           params: {
             branch: body.branch,
             commit: body.commit,
+            targetBranch: body.targetBranch,
             mergeBase: body.mergeBase,
           },
         },
