@@ -32,6 +32,16 @@ class Fields<T> {
     throw new BadRequestError(`\`${key}\` property must be a non-empty string`)
   }
 
+  number(key: keyof T) {
+    const value = this.use(key)
+
+    if (typeof value === 'number' && !isNaN(value)) {
+      return value
+    }
+
+    throw new BadRequestError(`\`${key}\` property must be a number`)
+  }
+
   optionalString(key: keyof T) {
     const value = this.use(key)
 
