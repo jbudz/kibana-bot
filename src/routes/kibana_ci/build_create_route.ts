@@ -7,16 +7,7 @@ import { requireApiKey } from '../../lib/kibana_ci'
 interface Body {
   jenkinsJobName: string
   jenkinsJobId: string
-  branch?: string
-  commitSha?: string
   prId?: string
-  prTargetBranch?: string
-}
-
-const allOrNothing = (...args: Array<any>) => {
-  const allUndefined = args.every(arg => arg === undefined)
-  const noneUndefined = args.every(arg => arg !== undefined)
-  return allUndefined || noneUndefined
 }
 
 export const buildCreateRoute = new Route(
@@ -30,10 +21,7 @@ export const buildCreateRoute = new Route(
       return {
         jenkinsJobName: fields.string('jenkinsJobName'),
         jenkinsJobId: fields.string('jenkinsJobId'),
-        branch: fields.optionalString('branch'),
-        commitSha: fields.optionalString('commitSha'),
         prId: fields.optionalString('prId'),
-        prTargetBranch: fields.optionalString('prTargetBranch'),
       }
     })
 
@@ -45,12 +33,6 @@ export const buildCreateRoute = new Route(
         body,
       },
     })
-
-    if (!allOrNothing(body.prId, body.prTargetBranch)) {
-      log.info('incomplete pr details sent with build', {
-        '@type': 'incomplete pr details',
-      })
-    }
 
     try {
       await es.create({
