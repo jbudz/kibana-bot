@@ -25,23 +25,25 @@ export const addMetricsRoute = new Route(
       })),
     }))
 
-    const reqChunks: string[] = []
-    for (const metric of body.metrics) {
-      reqChunks.push(
-        JSON.stringify({
-          index: { _index: 'kibana-ci-stats__metrics' },
-        }),
-        JSON.stringify({
-          buildId: body.buildId,
-          ...metric,
-        }),
-      )
-    }
+    if (body.metrics.length) {
+      const reqChunks: string[] = []
+      for (const metric of body.metrics) {
+        reqChunks.push(
+          JSON.stringify({
+            index: { _index: 'kibana-ci-stats__metrics' },
+          }),
+          JSON.stringify({
+            buildId: body.buildId,
+            ...metric,
+          }),
+        )
+      }
 
-    const es = getEsClient(ctx)
-    await es.bulk({
-      body: reqChunks.join('\n'),
-    })
+      const es = getEsClient(ctx)
+      await es.bulk({
+        body: reqChunks.join('\n') + '\n',
+      })
+    }
 
     return {
       status: 200,
