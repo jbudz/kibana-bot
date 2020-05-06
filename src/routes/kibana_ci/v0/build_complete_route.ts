@@ -2,7 +2,7 @@ import { Route, BadRequestError, NotFoundError } from '@spalger/micro-plus'
 import { errors } from '@elastic/elasticsearch'
 
 import { getEsClient, parseBody } from '../../../lib'
-import { requireApiKey } from '../../../lib/kibana_ci'
+import { requireApiKey, logV0Usage } from '../../../lib/kibana_ci'
 
 interface Body {
   result: string
@@ -12,6 +12,8 @@ export const buildCompleteRoute = new Route(
   'POST',
   '/build/_complete',
   requireApiKey(async ctx => {
+    logV0Usage(ctx)
+
     const id = ctx.query.id
     if (typeof id !== 'string') {
       throw new BadRequestError('missing `id` query param')

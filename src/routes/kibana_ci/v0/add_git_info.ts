@@ -1,7 +1,7 @@
 import { Route, BadRequestError } from '@spalger/micro-plus'
 
 import { getEsClient, parseBody } from '../../../lib'
-import { requireApiKey } from '../../../lib/kibana_ci'
+import { requireApiKey, logV0Usage } from '../../../lib/kibana_ci'
 
 interface Body {
   branch: string
@@ -14,6 +14,8 @@ export const addGitInfoRoute = new Route(
   'POST',
   '/git_info',
   requireApiKey(async ctx => {
+    logV0Usage(ctx)
+
     const buildId = ctx.query.buildId
     if (typeof buildId !== 'string') {
       throw new BadRequestError('missing `buildId` query param')
