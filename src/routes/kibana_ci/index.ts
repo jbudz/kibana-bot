@@ -1,13 +1,4 @@
-import { buildCreateRoute } from './build_create_route'
-import { buildCompleteRoute } from './build_complete_route'
-import { addMetricRoute } from './add_metric_route'
-import { addMetricsRoute } from './add_metrics_route'
-import { addGitInfoRoute } from './add_git_info'
+import { v0KibanaCiRoutes } from './v0'
+import { v1KibanaCiRoutes } from './v1'
 
-export const kibanaCiRoutes = [
-  buildCreateRoute,
-  buildCompleteRoute,
-  addMetricRoute,
-  addMetricsRoute,
-  addGitInfoRoute,
-]
+export const kibanaCiRoutes = [...v0KibanaCiRoutes, ...v1KibanaCiRoutes]

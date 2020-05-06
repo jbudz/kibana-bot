@@ -1,29 +1,26 @@
-import { Route, BadRequestError } from '@spalger/micro-plus'
+import { Route } from '@spalger/micro-plus'
 
-import { getEsClient, parseBody } from '../../lib'
-import { requireApiKey } from '../../lib/kibana_ci'
+import { getEsClient, parseBody } from '../../../lib'
+import { requireApiKey } from '../../../lib/kibana_ci'
 
 interface Body {
+  buildId: string
   metrics: Array<{
-    name: string
-    subName: string
+    group: string
+    id: string
     value: number
   }>
 }
 
 export const addMetricsRoute = new Route(
   'POST',
-  '/metrics',
+  '/v1/metrics',
   requireApiKey(async ctx => {
-    const buildId = ctx.query.buildId
-    if (typeof buildId !== 'string') {
-      throw new BadRequestError('missing `buildId` query param')
-    }
-
     const body = await parseBody<Body>(ctx, fields => ({
+      buildId: fields.string('buildId'),
       metrics: fields.arrayOfObjects('metrics', f => ({
-        name: f.string('name'),
-        subName: f.string('subName'),
+        group: f.string('group'),
+        id: f.string('id'),
         value: f.number('value'),
       })),
     }))
@@ -35,8 +32,8 @@ export const addMetricsRoute = new Route(
           index: { _index: 'kibana-ci-stats__metrics' },
         }),
         JSON.stringify({
+          buildId: body.buildId,
           ...metric,
-          buildId,
         }),
       )
     }

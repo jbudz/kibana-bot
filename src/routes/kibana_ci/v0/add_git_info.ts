@@ -1,7 +1,7 @@
 import { Route, BadRequestError } from '@spalger/micro-plus'
 
-import { getEsClient, parseBody } from '../../lib'
-import { requireApiKey } from '../../lib/kibana_ci'
+import { getEsClient, parseBody } from '../../../lib'
+import { requireApiKey } from '../../../lib/kibana_ci'
 
 interface Body {
   branch: string

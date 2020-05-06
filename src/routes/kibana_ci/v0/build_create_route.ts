@@ -1,8 +1,8 @@
 import { Route } from '@spalger/micro-plus'
 import * as Uuid from 'uuid'
 
-import { getRequestLogger, getEsClient, parseBody } from '../../lib'
-import { requireApiKey } from '../../lib/kibana_ci'
+import { getRequestLogger, getEsClient, parseBody } from '../../../lib'
+import { requireApiKey } from '../../../lib/kibana_ci'
 
 interface Body {
   jenkinsJobName: string

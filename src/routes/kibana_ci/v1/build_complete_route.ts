@@ -1,8 +1,8 @@
 import { Route, BadRequestError, NotFoundError } from '@spalger/micro-plus'
 import { errors } from '@elastic/elasticsearch'
 
-import { getEsClient, parseBody } from '../../lib'
-import { requireApiKey } from '../../lib/kibana_ci'
+import { getEsClient, parseBody } from '../../../lib'
+import { requireApiKey } from '../../../lib/kibana_ci'
 
 interface Body {
   result: string
@@ -10,7 +10,7 @@ interface Body {
 
 export const buildCompleteRoute = new Route(
   'POST',
-  '/build/_complete',
+  '/v1/build/_complete',
   requireApiKey(async ctx => {
     const id = ctx.query.id
     if (typeof id !== 'string') {
