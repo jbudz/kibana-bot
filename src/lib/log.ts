@@ -1,3 +1,5 @@
+import { Writable } from 'stream'
+
 import apm from 'elastic-apm-node'
 import { Client } from '@elastic/elasticsearch'
 import winston from 'winston'
@@ -61,6 +63,27 @@ const getProdTransports = (es: Client) => [
 ]
 
 export type Log = winston.Logger
+
+export function createTestRootLog() {
+  return winston.createLogger({
+    level: 'verbose',
+    transports: new winston.transports.Stream({
+      stream: new Writable({
+        objectMode: true,
+        write(msg, _, cb) {
+          if (process.env.ENABLE_TEST_LOGGING) {
+            console.log(
+              `[${msg.level}][${msg['@type']}] ${msg.message}`,
+              msg.extra,
+            )
+          }
+
+          cb()
+        },
+      }),
+    }),
+  })
+}
 
 export function createRootLog(es: Client | null): Log {
   return winston.createLogger({

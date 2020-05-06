@@ -6,10 +6,35 @@ import { getRequestLogger } from './log'
 
 const pipelineAsync = Util.promisify(Stream.pipeline)
 
+type ArrayItem<T> = T extends Array<infer X> ? X : never
+
+type Reader<T> = (fields: Fields<T>) => T
+
 class Fields<T> {
   private keys: Set<keyof T>
 
-  constructor(private input: Record<keyof T, unknown>) {
+  static parse<T>(
+    input: Record<keyof T, unknown>,
+    name: string,
+    reader: Reader<T>,
+  ) {
+    const fields = new Fields<T>(input, `${name}.`)
+    const parsed = reader(fields)
+
+    const extras = fields.extraKeys()
+    if (extras?.length) {
+      throw new BadRequestError(
+        `unexpected fields in ${name}: ${extras.join(', ')}`,
+      )
+    }
+
+    return parsed
+  }
+
+  constructor(
+    private input: Record<keyof T, unknown>,
+    private keyPrefix: string,
+  ) {
     this.keys = new Set(Object.keys(input) as Array<keyof T>)
   }
 
@@ -29,7 +54,9 @@ class Fields<T> {
       return value
     }
 
-    throw new BadRequestError(`\`${key}\` property must be a non-empty string`)
+    throw new BadRequestError(
+      `\`${this.keyPrefix}${key}\` property must be a non-empty string`,
+    )
   }
 
   number(key: keyof T) {
@@ -39,7 +66,9 @@ class Fields<T> {
       return value
     }
 
-    throw new BadRequestError(`\`${key}\` property must be a number`)
+    throw new BadRequestError(
+      `\`${this.keyPrefix}${key}\` property must be a number`,
+    )
   }
 
   optionalString(key: keyof T) {
@@ -54,7 +83,24 @@ class Fields<T> {
     }
 
     throw new BadRequestError(
-      `\`${key}\` property must be a non-empty string when it is defined`,
+      `\`${this.keyPrefix}${key}\` property must be a non-empty string when it is defined`,
+    )
+  }
+
+  arrayOfObjects<K extends keyof T, I extends T[K]>(
+    key: K,
+    reader: Reader<ArrayItem<I>>,
+  ) {
+    const items = this.use(key)
+
+    if (!Array.isArray(items)) {
+      throw new BadRequestError(
+        `\`${this.keyPrefix}${key}\` property must be an array`,
+      )
+    }
+
+    return items.map((item, i) =>
+      Fields.parse(item, `${this.keyPrefix}${key}[${i}]`, reader),
     )
   }
 
@@ -65,12 +111,7 @@ class Fields<T> {
   }
 }
 
-type Transform<T extends {}> = (fields: Fields<T>) => T | Promise<T>
-
-export async function parseBody<T extends {}>(
-  ctx: ReqContext,
-  transform: Transform<T>,
-) {
+export async function parseBody<T>(ctx: ReqContext, transform: Reader<T>) {
   const log = getRequestLogger(ctx)
 
   let json = ''
@@ -109,27 +150,14 @@ export async function parseBody<T extends {}>(
     throw new BadRequestError(`request body must be an object`)
   }
 
-  const fields = new Fields(body as Record<keyof T, unknown>)
-
   try {
-    const parsed = await transform(fields)
-
-    const extras = fields.extraKeys()
-    if (extras?.length) {
-      throw new BadRequestError(
-        `unexpected fields in body: ${extras.join(', ')}`,
-      )
-    }
-
-    return parsed
+    return Fields.parse(body as Record<keyof T, unknown>, 'body', transform)
   } catch (error) {
     if (error instanceof BadRequestError) {
       log.error('request body validation failed', {
         '@type': 'request body validation failed',
         extra: { body },
       })
-
-      throw new BadRequestError(`body parse error: ${error.message}`)
     }
 
     throw error
