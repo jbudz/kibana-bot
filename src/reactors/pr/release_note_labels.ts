@@ -1,5 +1,5 @@
 import { ReactorInput, PrReactor } from './pr_reactor'
-import { RELEASE_BRANCH_RE } from '../../lib'
+import { RELEASE_BRANCH_RE, InvalidLabelLog } from '../../lib'
 
 const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'labeled',
@@ -16,7 +16,7 @@ export const releaseNoteLabels = new PrReactor({
   filter: ({ input: { action, pr } }) =>
     pr.state === 'open' && !pr.draft && RELEVANT_ACTIONS.includes(action),
 
-  async exec({ input: { pr }, githubApi }) {
+  async exec({ input: { pr }, githubApi, es, log }) {
     const labelNames = pr.labels.map(label => label.name)
     const missingReleaseNotesLabel = !labelNames.some(n =>
       n.startsWith('release_note:'),
@@ -28,6 +28,7 @@ export const releaseNoteLabels = new PrReactor({
     const isBackport = labelNames.includes('backport')
 
     if (isBasedOnReleaseBranch && missingReleaseNotesLabel && !isBackport) {
+      await new InvalidLabelLog(es, log).add(pr.number)
       await githubApi.setCommitStatus(pr.head.sha, {
         context: 'prbot:release note labels',
         description: 'All PRs require a release_note:* label',
