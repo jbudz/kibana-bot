@@ -1,6 +1,6 @@
 import { GithubUser } from './user'
 import { GithubRepo } from './repo'
-import { GithubLabel } from './label'
+import { GithubApiLabel } from './label'
 import { GithubAuthorAssociation } from './author_association'
 
 export interface GithubWebhookIssueEvent {
@@ -36,7 +36,7 @@ export interface GithubWebhookIssueEvent {
   /** The optional user who was assigned or unassigned from the issue. */
   assignee?: GithubUser
   /** The optional label that was added or removed from the issue. */
-  label?: GithubLabel
+  label?: GithubApiLabel
   repository: GithubRepo
   sender: unknown
 }
@@ -53,7 +53,7 @@ export interface GithubApiIssue {
   number: number
   title: string
   user: GithubUser
-  labels: GithubLabel[]
+  labels: GithubApiLabel[]
   state: 'open' | 'closed'
   locked: false
   assignee: GithubUser

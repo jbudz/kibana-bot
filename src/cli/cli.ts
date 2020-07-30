@@ -11,6 +11,7 @@ import { runRefreshAllPrsCommand } from './commands/refresh_all_prs'
 import { runRefreshIssueCommand } from './commands/refresh_issue'
 import { runRefreshAllIssuesCommand } from './commands/refresh_all_issues'
 import { runBackportStateCommand } from './commands/backport_state'
+import { runRefreshAllLabelsCommand } from './commands/refresh_all_labels'
 import { createRootLog, GithubApi, createRootClient } from '../lib'
 
 const helpText = `
@@ -24,6 +25,7 @@ CLI to run tasks on Kibana PRs
     refresh_all_issues [reactor]   run a specific reactor against all open issues
     refresh_pr [pr] [reactor]      run a specific reactor against a specific pr
     refresh_all_prs [reactor]      run a specific reactor against all open prs
+    refresh_all_labels <reactor>   run one or all reactors against all labels
     print_base_branches            print the base branch of all open prs
     print_pr_status [context]      print the specific status of each PR
       --only-failures, -f            Only print failure statuses
@@ -112,6 +114,14 @@ export async function main() {
         await runBackportStateCommand(githubApi, {
           prIdInput,
         })
+        return
+      }
+
+      case 'refresh_all_labels': {
+        const [, reactorId] = argv._
+        const es = createRootClient(log)
+        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        await runRefreshAllLabelsCommand(log, es, githubApi, reactorId)
         return
       }
 

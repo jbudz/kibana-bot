@@ -1,6 +1,6 @@
 import { GithubUser, GithubOrg } from './user'
 import { GithubRepo } from './repo'
-import { GithubLabel } from './label'
+import { GithubApiLabel } from './label'
 import { GithubAuthorAssociation } from './author_association'
 
 export interface GithubWebhookPullRequestEvent {
@@ -56,7 +56,7 @@ export interface GithubApiPr {
   title: string
   user: GithubUser
   body: string
-  labels: GithubLabel[]
+  labels: GithubApiLabel[]
   milestone: unknown
   active_lock_reason: unknown
   /** ISO8601 date string */

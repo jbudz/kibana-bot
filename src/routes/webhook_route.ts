@@ -11,6 +11,7 @@ import {
   GithubWebhookPullRequestEvent,
   GithubWebhookPushEvent,
   GithubWebhookCommitStatus,
+  GithubWebhookLabelEvent,
 } from '../github_api_types'
 import {
   runReactors,
@@ -18,6 +19,7 @@ import {
   issueReactors,
   pushReactors,
   statusReactors,
+  labelReactors,
 } from '../reactors'
 import { LRUMap } from 'lru_map'
 
@@ -98,6 +100,23 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
               githubApi,
               log,
               es: getEsClient(ctx),
+            },
+          }),
+        }
+      }
+
+      case 'label': {
+        const wh = webhook as GithubWebhookLabelEvent
+        return {
+          body: await runReactors(labelReactors, {
+            context: {
+              input: {
+                action: wh.action,
+                label: wh.label,
+              },
+              githubApi,
+              es: getEsClient(ctx),
+              log,
             },
           }),
         }

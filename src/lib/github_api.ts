@@ -8,6 +8,7 @@ import { ASTNode } from 'graphql/language/ast'
 import { Log } from '../lib'
 import {
   GithubApiPr,
+  GithubApiLabel,
   GithubApiIssue,
   GithubApiCompare,
   Commit,
@@ -358,6 +359,16 @@ export class GithubApi {
       return await this.get<GithubApiIssue[]>('/repos/elastic/kibana/issues', {
         state: 'open',
       })
+    })
+  }
+
+  public iterAllLabels() {
+    return this.ittrAll<GithubApiLabel>(async () => {
+      this.log.info('fetching initial page of labels')
+      return await this.get<GithubApiLabel[]>(
+        '/repos/elastic/kibana/labels',
+        {},
+      )
     })
   }
 
