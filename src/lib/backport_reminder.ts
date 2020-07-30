@@ -80,7 +80,7 @@ export async function scheduleBackportReminder(
     id: `pr_${prNumber}`,
   }
 
-  const existsResp = await es.exists({ ...selectParams })
+  const existsResp = await es.exists<boolean>({ ...selectParams })
   const reminderTime = addDaysToTimeExcludingWeekends(
     new Date(),
     existsResp.body === true ? FOLLOW_UP_REMINDER_DAYS : FIRST_REMINDER_DAYS,

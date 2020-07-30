@@ -97,7 +97,7 @@ export async function* scrollSearch<T extends EsHit<any>>(
   es: Client,
   params: any,
 ) {
-  const page1 = await es.search({
+  const page1 = await es.search<any>({
     scroll: '1m',
     ...params,
   })

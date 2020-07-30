@@ -1,7 +1,7 @@
 import apm from 'elastic-apm-node'
 import { Client } from '@elastic/elasticsearch'
 import winston from 'winston'
-import WinstonElasticsearch from 'winston-elasticsearch'
+import { ElasticsearchTransport } from 'winston-elasticsearch'
 
 import { makeContextCache } from './req_cache'
 import { getRequestId } from './req_id'
@@ -22,7 +22,7 @@ const getDevTransports = () => [
 
 const getProdTransports = (es: Client) => [
   new winston.transports.Console(),
-  new WinstonElasticsearch({
+  new ElasticsearchTransport({
     level: 'debug',
     index: 'kibana-bot-logs',
     ensureMappingTemplate: false,
