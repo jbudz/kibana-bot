@@ -1,8 +1,12 @@
 import { ReactorInput, LabelReactor } from './label_reactor'
 
-const RELEVANT_ACTIONS: ReactorInput['action'][] = ['refresh', 'created']
+const RELEVANT_ACTIONS: ReactorInput['action'][] = [
+  'refresh',
+  'created',
+  'edited',
+]
 
-const VERSION_LIKE_RE = /^[\d\.]$/
+const VERSION_LIKE_RE = /^[\d\.]+$/
 
 export const invalidVersionLabels = new LabelReactor({
   id: 'invalidVersionLabels',
