@@ -1,9 +1,9 @@
-import { Client } from '@elastic/elasticsearch'
-import { getConfigVar } from '@spalger/micro-plus'
+import { Client as EsClient } from '@elastic/elasticsearch'
 
-import { Log } from './log'
-import { makeContextCache } from './req_cache'
+import { Logger } from './log'
+import { isObj } from './utils'
 
+export { EsClient }
 export type EsHit<T> = {
   _index: string
   _id: string
@@ -11,9 +11,9 @@ export type EsHit<T> = {
   _source: T
 }
 
-export function logEsClientReponseErrors(es: Client, log: Log) {
-  es.on('response', (error: any) => {
-    if (error && error.meta) {
+export function setupEsClientLogging(es: EsClient, log: Logger) {
+  es.on('response', (error: unknown) => {
+    if (isObj(error) && isObj(error.meta)) {
       const { body, statusCode, headers, warnings } = error.meta as {
         body: unknown
         statusCode?: number
@@ -21,8 +21,8 @@ export function logEsClientReponseErrors(es: Client, log: Log) {
         warnings: unknown
       }
 
-      log.error('ES ERROR', {
-        '@type': 'esError',
+      log.error({
+        type: 'esError',
         extra: {
           body,
           statusCode,
@@ -31,29 +31,15 @@ export function logEsClientReponseErrors(es: Client, log: Log) {
         },
       })
     } else if (error) {
+      /* eslint-disable-next-line no-console */
       console.error('UNKNOWN ES ERROR')
+      /* eslint-disable-next-line no-console */
       console.error(error)
     }
   })
 }
 
-export function createRootClient(log: Log | null) {
-  const es = new Client({
-    node: getConfigVar('ES_URL'),
-  })
-
-  if (log !== null) {
-    logEsClientReponseErrors(es, log)
-  }
-
-  return es
-}
-
-const cache = makeContextCache<Client>('es client')
-export const assignEsClient = cache.assignValue
-export const getEsClient = cache.get
-
-export async function getOldestMissingCommitDate(es: Client, sha: string) {
+export async function getOldestMissingCommitDate(es: EsClient, sha: string) {
   const resp = await es.get(
     {
       index: 'prbot-commit-times',
@@ -72,7 +58,7 @@ export async function getOldestMissingCommitDate(es: Client, sha: string) {
 }
 
 export async function recordCommitStatus(
-  es: Client,
+  es: EsClient,
   prNumber: number,
   sha: string,
   commitStatusOptions: { [key: string]: any },
@@ -94,7 +80,7 @@ export async function recordCommitStatus(
 }
 
 export async function* scrollSearch<T extends EsHit<any>>(
-  es: Client,
+  es: EsClient,
   params: any,
 ) {
   const page1 = await es.search<any>({

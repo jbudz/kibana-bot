@@ -1,15 +1,20 @@
 import { Reactor, ReactorContext } from './reactor'
 
-export interface RunReactorOptions<E> {
-  context: ReactorContext<E>
+export interface RunReactorOptions<I> {
+  context: ReactorContext
+  input: I
 }
 
-export async function runReactors<E>(
-  reactors: Reactor<E>[],
-  { context }: RunReactorOptions<E>,
+export async function runReactors<I>(
+  reactors: Reactor<I>[],
+  options: RunReactorOptions<I>,
 ) {
   const combinedResult: Record<string, { skipped: boolean; result?: any }> = {}
   const promises = []
+  const context = {
+    ...options.context,
+    input: options.input,
+  }
 
   for (const reactor of reactors) {
     if (!reactor.filter(context)) {
@@ -19,9 +24,11 @@ export async function runReactors<E>(
       continue
     }
 
-    context.log.info(`Executing reactor [${reactor.id}]`, {
-      '@type': 'executeReactor',
-      reactorId: reactor.id,
+    context.log.info({
+      type: 'reactor execution',
+      meta: {
+        reactor: reactor.id,
+      },
     })
 
     promises.push(

@@ -3,14 +3,16 @@ import Iron from '@hapi/iron'
 import { Client } from '@elastic/elasticsearch'
 
 import Axios from 'axios'
-import { getConfigVar, ServerError } from '@spalger/micro-plus'
 
 import { scrollSearch } from './es'
 import * as AsyncIter from './async_iterators'
-import { Log, getRequestLogger } from './log'
-import { makeContextCache } from './req_cache'
+import { Logger, getRequestLogger } from './log'
+import { makeAutoCache } from './auto_cache'
+import { Config } from './config'
 import { isAxiosErrorResp, createAxiosErrorResp } from './axios_errors'
-import { getEsClient, EsHit } from './es'
+import { EsHit, EsClient } from './es'
+import { ServerError } from './error_response'
+import { ReqContext } from './req_context'
 
 /**
  * required escaping per slack api docs
@@ -63,19 +65,18 @@ export class SlackApi {
   private readonly decrypt: <T = unknown>(data: string) => Promise<T>
 
   constructor(
-    private readonly log: Log,
+    private readonly log: Logger,
     private readonly es: Client,
     config: {
       credsIndex: string
       clientId: string
       clientSecret: string
-      credsPassword: {
-        readonly id: string
-        readonly secret: string
-      }
+      credsPassword: string
     },
   ) {
     this.credsIndex = config.credsIndex
+
+    const parsedPassword = this.parsePassword(config.credsPassword)
 
     this.basicAuth =
       'basic ' +
@@ -84,14 +85,14 @@ export class SlackApi {
       )
 
     this.encrypt = async (data: unknown) => {
-      return await Iron.seal(data, config.credsPassword, Iron.defaults)
+      return await Iron.seal(data, parsedPassword, Iron.defaults)
     }
 
     this.decrypt = async (sealed: string) => {
       return await Iron.unseal(
         sealed,
         {
-          [config.credsPassword.id]: config.credsPassword.secret,
+          [parsedPassword.id]: parsedPassword.secret,
         },
         Iron.defaults,
       )
@@ -105,8 +106,9 @@ export class SlackApi {
       single_channel: false,
     })
 
-    this.log.info('finishing slack oauth', {
-      '@type': 'slackOauthComplete',
+    this.log.info({
+      type: 'slackOauthComplete',
+      message: 'finishing slack oauth',
       extra: {
         code,
         redirectUri,
@@ -151,8 +153,9 @@ export class SlackApi {
       }
     } catch (error) {
       if (isAxiosErrorResp(error)) {
-        this.log.error('failed to finish slack oauth', {
-          '@type': 'slackOauthComplete-FailureResponse',
+        this.log.error({
+          type: 'slackOauthComplete-FailureResponse',
+          message: 'failed to finish slack oauth',
           extra: {
             config: error.config,
             status: error.response.status,
@@ -161,8 +164,9 @@ export class SlackApi {
           },
         })
       } else {
-        this.log.error('failed to send request to slack', {
-          '@type': 'slackOauthComplete-RequestFailure',
+        this.log.error({
+          type: 'slackOauthComplete-RequestFailure',
+          message: 'failed to send request to slack',
           extra: {
             error: error.stack || error.message || error,
           },
@@ -195,8 +199,8 @@ export class SlackApi {
       })
     } catch (error) {
       if (isAxiosErrorResp(error)) {
-        this.log.error('send to slack webhook: failure response', {
-          '@type': 'slackWebhookFailure',
+        this.log.error({
+          type: 'send to slack webhook - failure response',
           extra: {
             msg: escapedText,
             status: error.response.status,
@@ -207,8 +211,8 @@ export class SlackApi {
         return
       }
 
-      this.log.error('send to slack webhook: request failure', {
-        '@type': 'slackWebhookFailure',
+      this.log.error({
+        type: 'send to slack webhook - request failure',
         extra: {
           msg: escapedText,
           error: error.stack || error.message || error,
@@ -234,8 +238,8 @@ export class SlackApi {
     }
 
     if (!webhookUrl || !accessToken) {
-      this.log.error('Unable to parse creds from slack auth', {
-        '@type': 'parseSlackCredsFailure',
+      this.log.error({
+        type: 'Unable to parse creds from slack auth',
         extra: {
           encrypted_slack_creds: this.encrypt(authResp),
         },
@@ -263,8 +267,8 @@ export class SlackApi {
         : undefined
 
     if (!webhookUrl || !accessToken) {
-      this.log.error('Unable to parse stored creds from slack creds index', {
-        '@type': 'parseSlackCredsFailure',
+      this.log.error({
+        type: 'Unable to parse stored creds from slack creds index',
         extra: {
           encrypted_slack_creds: encryptedPayload,
         },
@@ -289,8 +293,8 @@ export class SlackApi {
   }
 
   public async broadcast(msg: string) {
-    this.log.info('Broadcasting msg to all slack webhooks', {
-      '@type': 'slackBroadcast',
+    this.log.info({
+      type: 'Broadcasting msg to all slack webhooks',
       extra: {
         msg,
       },
@@ -308,26 +312,41 @@ export class SlackApi {
     )
 
     for (const failure of failures) {
-      this.log.error('Slack broadcast failure', {
-        '@type': 'slackBroadcastFailure',
+      this.log.error({
+        type: 'slackBroadcastFailure',
         extra: {
           stack: failure.reason.stack,
         },
       })
     }
   }
+
+  private parsePassword(
+    json: string,
+  ): {
+    readonly id: string
+    readonly secret: string
+  } {
+    try {
+      return JSON.parse(json)
+    } catch (error) {
+      throw new ServerError('unable to parse slaskCredsPassword JSON')
+    }
+  }
 }
 
-export const createSlackApi = (log: Log, client: Client) =>
-  new SlackApi(log, client, {
-    credsIndex: getConfigVar('SLACK_CREDS_INDEX'),
-    clientId: getConfigVar('SLACK_CLIENT_ID'),
-    clientSecret: getConfigVar('SLACK_CLIENT_SECRET'),
-    credsPassword: JSON.parse(getConfigVar('SLACK_CREDS_PASSWORD')),
+export const makeSlackApi = (log: Logger, es: EsClient, config: Config) => {
+  return new SlackApi(log, es, {
+    credsIndex: config.get('slackCredsIndex'),
+    clientId: config.get('slackClientId'),
+    clientSecret: config.get('slackClientSecret'),
+    credsPassword: config.get('slackCredsPassword'),
   })
+}
 
-const slackApiCache = makeContextCache('github api', ctx =>
-  createSlackApi(getRequestLogger(ctx), getEsClient(ctx)),
-)
+const slackApiCache = makeAutoCache((ctx: ReqContext) => {
+  const log = getRequestLogger(ctx)
+  return makeSlackApi(log, ctx.server.es, ctx.server.config)
+})
 
 export const getSlackApi = slackApiCache.get

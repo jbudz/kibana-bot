@@ -1,7 +1,7 @@
 import getopts from 'getopts'
 import chalk from 'chalk'
-import { getConfigVar } from '@spalger/micro-plus'
 
+import { Secrets } from '../secrets'
 import { CliError } from './errors'
 import { runPrintStatusCommand } from './commands/print_status'
 import { runInvalidateApmFailuresCommand } from './commands/invalidate_apm_failures'
@@ -12,7 +12,14 @@ import { runRefreshIssueCommand } from './commands/refresh_issue'
 import { runRefreshAllIssuesCommand } from './commands/refresh_all_issues'
 import { runBackportStateCommand } from './commands/backport_state'
 import { runRefreshAllLabelsCommand } from './commands/refresh_all_labels'
-import { createRootLog, GithubApi, createRootClient } from '../lib'
+import {
+  CliLog,
+  GithubApi,
+  EsClient,
+  setupEsClientLogging,
+  Config,
+} from '../lib'
+import { ReactorContext } from '../reactors'
 
 const helpText = `
 node cli [command] [...options]
@@ -28,14 +35,18 @@ CLI to run tasks on Kibana PRs
     refresh_all_labels <reactor>   run one or all reactors against all labels
     print_base_branches            print the base branch of all open prs
     print_pr_status [context]      print the specific status of each PR
-      --only-failures, -f            Only print failure statuses
+      --only-failurgetEsClient(), -f            Only print failure statuses
     backport_state [pr]            print the backport state of a PR
 `
 
 export async function main() {
   try {
-    const log = createRootLog(null)
+    const log = new CliLog('debug')
     const unknownFlagNames: string[] = []
+    const secrets = Secrets.loadFromFile()
+    const config = Config.load({
+      ...secrets,
+    })
     const argv = getopts(process.argv.slice(2), {
       boolean: ['only-failures'],
       alias: {
@@ -53,65 +64,71 @@ export async function main() {
       })
     }
 
+    const getGithubApi = () => {
+      return new GithubApi(log, secrets.get('githubSecret'))
+    }
+
+    const getReactorContext = (): ReactorContext => {
+      const es = new EsClient({
+        node: secrets.get('esUrl'),
+      })
+      setupEsClientLogging(es, log)
+
+      return {
+        es,
+        githubApi: getGithubApi(),
+        config,
+        log,
+      }
+    }
+
     const [command] = argv._
     switch (command) {
       case 'print_pr_status': {
         const [, context] = argv._
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        await runPrintStatusCommand(githubApi, context, {
+        await runPrintStatusCommand(getGithubApi(), context, {
           onlyFailures: !!argv['only-failures'],
         })
         return
       }
 
       case 'invalidate_apm_ci_failures': {
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        await runInvalidateApmFailuresCommand(githubApi)
+        await runInvalidateApmFailuresCommand(getGithubApi())
         return
       }
 
       case 'print_base_branches': {
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        await runPrintBaseBranchesCommand(githubApi)
+        await runPrintBaseBranchesCommand(getGithubApi())
         return
       }
 
       case 'refresh_pr': {
         const [, prId, reactorId] = argv._
-        const es = createRootClient(log)
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        await runRefreshPrCommand(prId, reactorId, log, es, githubApi)
+        await runRefreshPrCommand(prId, reactorId, getReactorContext())
         return
       }
 
       case 'refresh_all_prs': {
         const [, reactorId] = argv._
-        const es = createRootClient(log)
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        await runRefreshAllPrsCommand(reactorId, log, es, githubApi)
+        await runRefreshAllPrsCommand(reactorId, getReactorContext())
         return
       }
 
       case 'refresh_issue': {
         const [, prId, reactorId] = argv._
-        const es = createRootClient(log)
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        await runRefreshIssueCommand(prId, reactorId, log, es, githubApi)
+        await runRefreshIssueCommand(prId, reactorId, getReactorContext())
         return
       }
 
       case 'refresh_all_issues': {
         const [, reactorId] = argv._
-        const es = createRootClient(log)
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        await runRefreshAllIssuesCommand(reactorId, log, es, githubApi)
+        await runRefreshAllIssuesCommand(reactorId, getReactorContext())
         return
       }
 
       case 'backport_state': {
         const [, prIdInput] = argv._
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        await runBackportStateCommand(githubApi, {
+        await runBackportStateCommand(getGithubApi(), {
           prIdInput,
         })
         return
@@ -119,9 +136,7 @@ export async function main() {
 
       case 'refresh_all_labels': {
         const [, reactorId] = argv._
-        const es = createRootClient(log)
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
-        await runRefreshAllLabelsCommand(log, es, githubApi, reactorId)
+        await runRefreshAllLabelsCommand(reactorId, getReactorContext())
         return
       }
 

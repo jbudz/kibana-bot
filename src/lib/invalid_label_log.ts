@@ -1,9 +1,9 @@
 import { Client } from '@elastic/elasticsearch'
 import { scrollSearch, EsHit } from './es'
-import { Log } from './log'
+import { Logger } from './log'
 
 export class InvalidLabelLog {
-  constructor(private readonly es: Client, private readonly log: Log) {}
+  constructor(private readonly es: Client, private readonly log: Logger) {}
   /**
    * Record that a PR received "failure" statuses for label reasons
    * so that we can check them in a little while
@@ -28,9 +28,13 @@ export class InvalidLabelLog {
 
     // called after each item is handled so it can be deleted
     const handled = async (hit: EsHit<{}>) => {
-      this.log.info(
-        `handled and clearing "invalid label log" item [id=${hit._id}]`,
-      )
+      this.log.info({
+        type: 'invalid labels log',
+        message: 'label log item handled',
+        extra: {
+          id: hit._id,
+        },
+      })
 
       try {
         await this.es.delete({
@@ -53,7 +57,13 @@ export class InvalidLabelLog {
       try {
         prId = JSON.parse(hit._id)
       } catch (error) {
-        this.log.error(`unable to parse label log item [id=${hit._id}]`)
+        this.log.error({
+          type: 'invalid labels log',
+          message: 'unable to parse label log item',
+          extra: {
+            id: hit._id,
+          },
+        })
         await handled(hit)
         continue
       }
@@ -61,7 +71,14 @@ export class InvalidLabelLog {
       try {
         await handler(prId)
       } catch (error) {
-        this.log.error(`handler failed for item [id=${hit._id}]`, error)
+        this.log.error({
+          type: 'invalid labels log',
+          message: 'failure executing handler',
+          extra: {
+            message: error.message,
+            stack: error.stack,
+          },
+        })
       }
 
       await handled(hit)

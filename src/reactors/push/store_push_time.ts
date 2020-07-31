@@ -10,15 +10,14 @@ export const storePushTime = new Reactor<GithubWebhookPushEvent>({
     RELEASE_BRANCH_RE.test(input.ref.replace('refs/heads/', '')),
 
   async exec({ input, es, log, githubApi }) {
-    const body = []
-
     if (input.forced) {
-      log.info('force push', {
-        '@type': 'forcePush',
-        extra: input,
+      log.info({
+        type: 'forcePush',
+        extra: { input },
       })
     }
 
+    const body = []
     const setStatusPromises: Array<Promise<void>> = []
 
     for (const commit of input.commits) {

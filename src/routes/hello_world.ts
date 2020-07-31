@@ -1,8 +1,12 @@
-import { Route } from '@spalger/micro-plus'
+import { Route } from '../lib'
 
-export const helloWorldRoute = new Route('GET', '/', async () => ({
-  status: 200,
-  body: {
-    hello: 'world',
-  },
-}))
+export const helloWorldRoute = new Route({
+  method: 'GET',
+  path: '/',
+  handler: async () => ({
+    status: 200,
+    body: {
+      hello: 'world',
+    },
+  }),
+})

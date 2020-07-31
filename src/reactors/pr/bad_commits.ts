@@ -60,16 +60,14 @@ export const badCommits = new PrReactor({
     )
 
     if (!brokeZones.length) {
-      log.warn(
-        `#${pr.number} to branch ${pr.base.ref} doesn't match any broke zones`,
-        {
-          '@type': 'brokeZoneNotMatched',
-          extra: {
-            prId: pr.number,
-            baseBranch: pr.base.ref,
-          },
+      log.warning({
+        type: 'brokeZoneNotMatched',
+        message: `#${pr.number} to branch ${pr.base.ref} doesn't match any broke zones`,
+        extra: {
+          prId: pr.number,
+          baseBranch: pr.base.ref,
         },
-      )
+      })
 
       return {
         pr: pr.number,
@@ -110,8 +108,9 @@ export const badCommits = new PrReactor({
         continue
       }
 
-      log.warn(`#${pr.number} is in the "broke zone" [${brokeZone.name}]`, {
-        '@type': 'prInBrokeZone',
+      log.warning({
+        type: 'prInBrokeZone',
+        message: `#${pr.number} is in the "broke zone" [${brokeZone.name}]`,
         extra: {
           brokeZone,
           commitsBehindStart,

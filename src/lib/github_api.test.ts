@@ -1,8 +1,5 @@
-import { getConfigVar } from '@spalger/micro-plus'
 import { GithubApi } from './github_api'
-import { createRootLog } from './log'
-
-const log = createRootLog(null)
+import { getTestLogger } from './log'
 
 describe('getPrsAndFiles()', () => {
   it('gets expected result', async () => {
@@ -11,7 +8,7 @@ describe('getPrsAndFiles()', () => {
       return
     }
 
-    const api = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+    const api = new GithubApi(getTestLogger(), process.env.GITHUB_SECRET)
     await expect(
       api.getPrsAndFiles('3c8ae0aaeb3c5e6c34c16617efa12d3bc8846439', 'closed'),
     ).resolves.toMatchInlineSnapshot(`

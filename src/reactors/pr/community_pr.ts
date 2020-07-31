@@ -1,6 +1,6 @@
 import { ReactorInput, PrReactor } from './pr_reactor'
 import { GithubApiPr } from '../../github_api_types'
-import { createSlackApi } from '../../lib'
+import { makeSlackApi } from '../../lib'
 
 const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'opened',
@@ -26,7 +26,7 @@ export const communityPr = new PrReactor({
     !EXCLUDED_USERS.includes(pr.user.login) &&
     RELEVANT_ACTIONS.includes(action),
 
-  async exec({ input: { pr, prFromApi, action }, githubApi, log, es }) {
+  async exec({ input: { pr, prFromApi, action }, githubApi, log, es, config }) {
     // if the pr is already from the API, or the pr.author_association indicates that
     // the user has commit access then we don't need to go to the API, but if it
     // doesn't it might be because the pr object sent by the webhook isn't fetched
@@ -45,7 +45,7 @@ export const communityPr = new PrReactor({
 
     if (isCommunityPr) {
       if (action !== 'refresh') {
-        const slack = createSlackApi(log, es)
+        const slack = makeSlackApi(log, es, config)
         await slack.broadcast(`New community PR! ${pr.html_url}`)
       }
 

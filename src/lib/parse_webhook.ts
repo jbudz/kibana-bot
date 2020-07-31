@@ -2,20 +2,16 @@ import * as Crypto from 'crypto'
 import { Writable, pipeline } from 'stream'
 import { promisify } from 'util'
 
-import {
-  ReqContext,
-  getConfigVar,
-  UnauthorizedError,
-} from '@spalger/micro-plus'
-
-import { Log } from '../lib'
+import { ReqContext, UnauthorizedError, getRequestLogger } from '../lib'
 
 const pipelineAsync = promisify(pipeline)
-const WEBHOOK_SECRET = getConfigVar('GITHUB_WEBHOOK_SECRET')
 
-export async function parseWebhook(ctx: ReqContext, log: Log) {
+export async function parseWebhook(ctx: ReqContext) {
+  const log = getRequestLogger(ctx)
+  const webhookSecret = ctx.server.config.get('githubWebhookSecret')
+
   let body = ''
-  const hmac = Crypto.createHmac('sha1', WEBHOOK_SECRET)
+  const hmac = Crypto.createHmac('sha1', webhookSecret)
 
   await pipelineAsync(
     ctx.readBodyAsStream(),
@@ -35,9 +31,12 @@ export async function parseWebhook(ctx: ReqContext, log: Log) {
   const signature = ctx.header('X-Hub-Signature')
   const expectedSignature = `sha1=${hmac.digest('hex')}`
   if (expectedSignature !== signature) {
-    log.warn('invalid webhook signature', {
-      signature,
-      expectedSignature,
+    log.warning({
+      type: 'invalid github webhook signature',
+      extra: {
+        signature,
+        expectedSignature,
+      },
     })
 
     throw new UnauthorizedError('invalid webhook signature')

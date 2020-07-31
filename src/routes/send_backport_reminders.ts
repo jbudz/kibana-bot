@@ -1,19 +1,18 @@
 import {
   requireDirectApiPassword,
   getGithubApi,
-  getEsClient,
   getRequestLogger,
   BACKPORT_REMINDER_INDEX,
   maybeSendBackportReminder,
   scrollSearch,
+  Route,
 } from '../lib'
-import { Route } from '@spalger/micro-plus'
 
-export const sendBackportRemindersRoute = new Route(
-  'GET',
-  '/send_backport_reminders',
-  requireDirectApiPassword(async ctx => {
-    const es = getEsClient(ctx)
+export const sendBackportRemindersRoute = new Route({
+  method: 'GET',
+  path: '/send_backport_reminders',
+  handler: requireDirectApiPassword(async ctx => {
+    const { es } = ctx.server
     const log = getRequestLogger(ctx)
     const githubApi = getGithubApi(ctx)
 
@@ -49,4 +48,4 @@ export const sendBackportRemindersRoute = new Route(
       },
     }
   }),
-)
+})

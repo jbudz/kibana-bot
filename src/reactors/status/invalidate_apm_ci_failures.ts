@@ -34,35 +34,42 @@ export const invalidateApmCiFailures = new Reactor<GithubWebhookCommitStatus>({
     }
 
     if (isPrUpdatedSinceCommit.length) {
-      log.info(
-        'found %d prs with this commit which have been updated since: %j',
-        isPrUpdatedSinceCommit.length,
-        isPrUpdatedSinceCommit,
-      )
+      log.info({
+        type: 'invalidateApmCiFailures - found updated prs',
+        message: `found ${isPrUpdatedSinceCommit.length} prs with this commit which have been updated since`,
+        extra: {
+          isPrUpdatedSinceCommit,
+        },
+      })
     }
 
     if (isPrIncludingApmChanges.length) {
-      log.info(
-        'found %d prs with this commit which include apm changes: %j',
-        isPrIncludingApmChanges.length,
-        isPrIncludingApmChanges,
-      )
+      log.info({
+        type: 'invalidateApmCiFailures - found prs including apm changes',
+        message: `found ${isPrIncludingApmChanges.length} prs with this commit which include apm changes`,
+        extra: {
+          isPrIncludingApmChanges,
+        },
+      })
     }
 
     if (isPrNotIncludingApmChanges.length) {
-      log.info(
-        'found %d prs with this commit which do not include apm changes: %j',
-        isPrNotIncludingApmChanges.length,
-        isPrNotIncludingApmChanges,
-      )
+      log.info({
+        type: 'invalidateApmCiFailures - found prs not including apm changes',
+        message: `found ${isPrNotIncludingApmChanges.length} prs with this commit which do not include apm changes`,
+        extra: {
+          isPrNotIncludingApmChanges,
+        },
+      })
     }
 
     if (isPrNotIncludingApmChanges.length && !isPrIncludingApmChanges.length) {
-      log.info(
-        `overwriting %j status of commit %j since it's not relevant`,
-        APM_CI_CONTEXT,
-        sha,
-      )
+      log.info({
+        type: 'invalidateApmCiFailures - overwriting',
+        extra: {
+          sha,
+        },
+      })
 
       await githubApi.setCommitStatus(sha, {
         context: APM_CI_CONTEXT,

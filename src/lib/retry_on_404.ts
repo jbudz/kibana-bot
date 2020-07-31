@@ -1,7 +1,7 @@
-import { Log } from './log'
+import { Logger } from './log'
 import { isAxiosErrorResp } from './axios_errors'
 
-export const retryOn404 = async <T>(log: Log, fn: () => T) => {
+export const retryOn404 = async <T>(log: Logger, fn: () => T) => {
   let attempt = 0
 
   while (true) {
@@ -15,9 +15,12 @@ export const retryOn404 = async <T>(log: Log, fn: () => T) => {
         error.response.status === 404 &&
         attempt <= 5
       ) {
-        log.warn('Github responded with a 404, retrying in 2 seconds', {
-          '@type': 'github404Retry',
-          attempt,
+        log.warning({
+          type: 'github404Retry',
+          message: 'Github responded with a 404, retrying in 2 seconds',
+          meta: {
+            attempt,
+          },
         })
         await new Promise(resolve =>
           setTimeout(resolve, Math.pow(2000, attempt)),

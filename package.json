@@ -5,38 +5,36 @@
   "main": "dist/run_server.js",
   "scripts": {
     "build": "babel src -d dist --delete-dir-on-start -x .ts --ignore **/*.test.ts --source-maps",
-    "type_check": "tsc --noEmit",
     "lint": "yarn eslint . --ext .ts,.js --max-warnings 0",
-    "test": "yarn type_check && yarn lint && yarn jest"
+    "test": "yarn type_check && yarn lint && yarn jest",
+    "type_check": "tsc --noEmit"
   },
   "jest": {
-    "verbose": true,
-    "testMatch": [
-      "**/*.test.[jt]s?(x)"
-    ],
     "roots": [
       "src/"
     ],
     "setupFiles": [
-      "dotenv/config"
-    ]
+      "<rootDir>/src/setup_env.ts"
+    ],
+    "testMatch": [
+      "**/*.test.[jt]s?(x)"
+    ],
+    "verbose": true
   },
   "dependencies": {
-    "@babel/preset-typescript": "^7.8.3",
     "@elastic/elasticsearch": "^7.6.1",
+    "@google-cloud/secret-manager": "^3.1.0",
     "@hapi/iron": "^6.0.0",
-    "@spalger/micro-plus": "^0.4.0",
     "abort-controller": "^3.0.0",
     "axios": "^0.19.2",
     "core-js": "^3.6.4",
-    "dotenv": "^8.2.0",
     "elastic-apm-node": "^3.5.0",
     "execa": "^4.0.0",
+    "lru_map": "^0.3.3",
     "getopts": "^2.2.5",
     "github-webhook-event-types": "^1.2.1",
     "graphql": "^14.6.0",
     "graphql-tag": "^2.10.3",
-    "lru_map": "^0.3.3",
     "parse-link-header": "^1.0.1",
     "rxjs": "^6.5.4",
     "source-map-support": "^0.5.16",
@@ -48,9 +46,10 @@
     "@babel/cli": "^7.8.4",
     "@babel/core": "^7.8.7",
     "@babel/plugin-proposal-class-properties": "^7.8.3",
-    "@babel/plugin-proposal-optional-chaining": "^7.8.3",
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.8.3",
+    "@babel/plugin-proposal-optional-chaining": "^7.8.3",
     "@babel/preset-env": "^7.8.7",
+    "@babel/preset-typescript": "^7.8.3",
     "@babel/register": "^7.8.6",
     "@types/jest": "^25.1.4",
     "@types/micro": "^7.3.3",

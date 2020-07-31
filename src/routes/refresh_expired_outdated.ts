@@ -1,12 +1,16 @@
-import { requireDirectApiPassword, getGithubApi, getEsClient } from '../lib'
-import { Route } from '@spalger/micro-plus'
-import { applyOutdatedResult, scrollSearch } from '../lib'
+import {
+  Route,
+  requireDirectApiPassword,
+  getGithubApi,
+  applyOutdatedResult,
+  scrollSearch,
+} from '../lib'
 
-export const refreshExpiredOutdatedRoute = new Route(
-  'GET',
-  '/refresh_expired_outdated',
-  requireDirectApiPassword(async ctx => {
-    const es = getEsClient(ctx)
+export const refreshExpiredOutdatedRoute = new Route({
+  method: 'GET',
+  path: '/refresh_expired_outdated',
+  handler: requireDirectApiPassword(async ctx => {
+    const { es } = ctx.server
     const githubApi = getGithubApi(ctx)
 
     const searchParams = {
@@ -42,4 +46,4 @@ export const refreshExpiredOutdatedRoute = new Route(
       },
     }
   }),
-)
+})

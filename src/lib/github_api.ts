@@ -1,11 +1,9 @@
 import Axios, { AxiosResponse, Method } from 'axios'
 import parseLinkHeader from 'parse-link-header'
-import { getConfigVar } from '@spalger/micro-plus'
 import gql from 'graphql-tag'
 import { print } from 'graphql/language/printer'
 import { ASTNode } from 'graphql/language/ast'
 
-import { Log } from '../lib'
 import {
   GithubApiPr,
   GithubApiLabel,
@@ -16,8 +14,9 @@ import {
   CombinedCommitStatus,
   GithubApiPullRequestFiles,
 } from '../github_api_types'
-import { makeContextCache } from './req_cache'
-import { getRequestLogger } from './log'
+import { makeAutoCache } from './auto_cache'
+import { ReqContext } from './req_context'
+import { getRequestLogger, Logger } from './log'
 import {
   isAxiosErrorReq,
   isAxiosErrorResp,
@@ -76,7 +75,7 @@ export class GithubApi {
   })
 
   public constructor(
-    private readonly log: Log,
+    private readonly log: Logger,
     private readonly secret: string,
   ) {}
 
@@ -96,13 +95,14 @@ export class GithubApi {
     const { ahead_by: totalMissingCommits, commits: missingCommits } = resp.data
 
     if (totalMissingCommits > 0 && !missingCommits.length) {
-      this.log.error(
-        'unexpected github response, expected oldest missing commit',
-        {
+      this.log.error({
+        type: 'unexpected github response',
+        message: 'expected oldest missing commit',
+        extra: {
           totalMissingCommits,
           respBody: resp.data,
         },
-      )
+      })
 
       throw new Error('Unexpected github response')
     }
@@ -346,7 +346,9 @@ export class GithubApi {
 
   public ittrAllOpenPrs() {
     return this.ittrAll<GithubApiPr>(async () => {
-      this.log.info('fetching initial page of PRs')
+      this.log.info({
+        type: 'fetching initial page of PRs',
+      })
       return await this.get<GithubApiPr[]>('/repos/elastic/kibana/pulls', {
         state: 'open',
       })
@@ -355,7 +357,9 @@ export class GithubApi {
 
   public ittrAllOpenIssues() {
     return this.ittrAll<GithubApiIssue>(async () => {
-      this.log.info('fetching initial page of issues')
+      this.log.info({
+        type: 'fetching initial page of issues',
+      })
       return await this.get<GithubApiIssue[]>('/repos/elastic/kibana/issues', {
         state: 'open',
       })
@@ -364,7 +368,9 @@ export class GithubApi {
 
   public iterAllLabels() {
     return this.ittrAll<GithubApiLabel>(async () => {
-      this.log.info('fetching initial page of labels')
+      this.log.info({
+        type: 'fetching initial page of labels',
+      })
       return await this.get<GithubApiLabel[]>(
         '/repos/elastic/kibana/labels',
         {},
@@ -676,10 +682,10 @@ export class GithubApi {
     } catch (error) {
       if (isAxiosErrorResp(error)) {
         this.checkForRateLimitInfo(error.response)
-        this.log.debug('github api response error', {
-          '@type': 'githubApiResponseError',
-          status: error.response.status,
+        this.log.debug({
+          type: 'github api response error',
           extra: {
+            status: error.response.status,
             method,
             url,
             params,
@@ -696,11 +702,14 @@ export class GithubApi {
         if (forceRetries || this.shouldRetry(error, url, method, attempt)) {
           const delay = 2000 * attempt
 
-          this.log.debug('automatically retrying request', {
-            '@type': 'githubApiAutoRetry',
-            status: error.response.status,
-            delay,
-            attempt,
+          this.log.debug({
+            type: 'githubApiAutoRetry',
+            message: 'automatically retrying request',
+            meta: {
+              status: error.response.status,
+              delay,
+              attempt,
+            },
             extra: {
               method,
               url,
@@ -722,10 +731,10 @@ export class GithubApi {
           })
         }
       } else if (isAxiosErrorReq(error)) {
-        this.log.debug('github api request error', {
-          '@type': 'githubApiRequestError',
-          errorMessage: error.message,
+        this.log.debug({
+          type: 'github api request error',
           extra: {
+            errorMessage: error.message,
             method,
             url,
             params,
@@ -808,17 +817,26 @@ export class GithubApi {
     // don't keep the process open just to log rate limit
     this.rateLimitLogThrottled.timer.unref()
 
-    this.log.info(`rate limit ${remaining}/${total}`, {
-      '@type': 'githubRateLimit',
-      rateLimitRemaining: remaining,
-      rateLimitTotal: total,
+    this.log.info({
+      type: 'github rate limit',
+      message: `rate limit ${remaining}/${total}`,
+      meta: {
+        rateLimitRemaining: remaining,
+        rateLimitTotal: total,
+      },
     })
   }
 }
 
-const githubApiCache = makeContextCache('github api', ctx => {
-  return new GithubApi(getRequestLogger(ctx), getConfigVar('GITHUB_SECRET'))
+const githubApiCache = makeAutoCache((ctx: ReqContext) => {
+  const secret = ctx.server.config.githubSecret
+
+  if (!secret) {
+    throw new Error('githubSecret is not available in config')
+  }
+
+  return new GithubApi(getRequestLogger(ctx), secret)
 })
 
 export const getGithubApi = githubApiCache.get
-export const assignGithubApi = githubApiCache.assignValue
+export const assignGithubApi = githubApiCache.assign

@@ -1,16 +1,13 @@
-import Elasticsearch from '@elastic/elasticsearch'
-
-import { Log, GithubApi } from '../../lib'
-import { runReactors, issueReactors } from '../../reactors'
+import { runReactors, issueReactors, ReactorContext } from '../../reactors'
 import { CliError } from '../errors'
 
 export async function runRefreshIssueCommand(
   issueId: string,
   reactorId: string,
-  log: Log,
-  es: Elasticsearch.Client,
-  githubApi: GithubApi,
+  context: ReactorContext,
 ) {
+  const { githubApi, log } = context
+
   if (!issueId) {
     throw new CliError('missing issue id', { showHelp: true })
   }
@@ -23,20 +20,19 @@ export async function runRefreshIssueCommand(
   }
 
   const issue = await githubApi.getIssue(Number.parseInt(issueId, 10))
-  const body = await runReactors(
-    issueReactors.filter(r => !reactorId || r.id === reactorId),
-    {
-      context: {
+
+  log.info({
+    type: 'run reactors',
+    message: `✅ success`,
+    extra: await runReactors(
+      issueReactors.filter(r => !reactorId || r.id === reactorId),
+      {
+        context,
         input: {
           action: 'refresh',
           issue,
         },
-        githubApi,
-        log,
-        es,
       },
-    },
-  )
-
-  log.info('✅ success', body)
+    ),
+  })
 }

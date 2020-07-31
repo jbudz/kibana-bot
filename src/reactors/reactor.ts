@@ -1,18 +1,18 @@
 import { Client } from '@elastic/elasticsearch'
 
-import { GithubApi, Log } from '../lib'
+import { GithubApi, Logger, Config } from '../lib'
 
-export interface ReactorContext<I> {
-  input: I
-  log: Log
+export interface ReactorContext {
+  log: Logger
   githubApi: GithubApi
   es: Client
+  config: Config
 }
 
 export class Reactor<I> {
   public readonly id: string
-  public readonly filter: (context: ReactorContext<I>) => boolean
-  public readonly exec: (context: ReactorContext<I>) => Promise<any>
+  public readonly filter: (context: ReactorContext & { input: I }) => boolean
+  public readonly exec: (context: ReactorContext & { input: I }) => Promise<any>
 
   public constructor(options: {
     id: Reactor<I>['id']

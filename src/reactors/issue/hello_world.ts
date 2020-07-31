@@ -9,7 +9,14 @@ export const helloWorld = new IssueReactor({
     issue.state === 'open' && RELEVANT_ACTIONS.includes(action),
 
   async exec({ input: { issue, action }, log }) {
-    log.info(`issue #${issue.number} [action=${action}]`, { action })
+    log.info({
+      type: 'hello world issue reactor',
+      meta: {
+        number: issue.number,
+        title: issue.title,
+        action,
+      },
+    })
 
     return {
       issue: issue.number,

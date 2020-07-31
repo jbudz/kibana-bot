@@ -1,16 +1,14 @@
-// import { getEsClient } from '../lib'
-import { getSlackApi } from '../lib'
-import { Route, SearchParamError } from '@spalger/micro-plus'
+import { getSlackApi, Route, BadRequestError } from '../lib'
 
-export const slackAuthCallbackRoute = new Route(
-  'GET',
-  '/slack_auth_callback',
-  async ctx => {
+export const slackAuthCallbackRoute = new Route({
+  method: 'GET',
+  path: '/slack_auth_callback',
+  handler: async ctx => {
     const slack = getSlackApi(ctx)
     const code = ctx.query['code']
 
     if (!code || typeof code !== 'string') {
-      throw new SearchParamError('code', 'expected a single ?code= param')
+      throw new BadRequestError('expected a single ?code= param')
     }
 
     const resp = await slack.finishOauth(code)
@@ -19,4 +17,4 @@ export const slackAuthCallbackRoute = new Route(
       body: resp,
     }
   },
-)
+})

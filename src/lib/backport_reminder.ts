@@ -1,7 +1,7 @@
 import { Client } from '@elastic/elasticsearch'
 
 import { GithubApi } from './github_api'
-import { Log } from './log'
+import { Logger } from './log'
 
 const SECOND = 1000
 const MINUTE = 60 * SECOND
@@ -72,7 +72,7 @@ export function addDaysToTimeExcludingWeekends(
 
 export async function scheduleBackportReminder(
   es: Client,
-  log: Log,
+  log: Logger,
   prNumber: number,
 ) {
   const selectParams = {
@@ -86,9 +86,13 @@ export async function scheduleBackportReminder(
     existsResp.body === true ? FOLLOW_UP_REMINDER_DAYS : FIRST_REMINDER_DAYS,
   )
 
-  log.info(
-    `scheduling pr backport reminder [pr ${prNumber}] [at ${reminderTime.toUTCString()}]`,
-  )
+  log.info({
+    type: 'scheduling backport reminder',
+    extra: {
+      pr: prNumber,
+      time: reminderTime.toUTCString(),
+    },
+  })
 
   await es.index({
     ...selectParams,
@@ -129,7 +133,7 @@ export async function maybeSendBackportReminder({
   prNumber,
 }: {
   es: Client
-  log: Log
+  log: Logger
   githubApi: GithubApi
   prNumber: number
 }) {

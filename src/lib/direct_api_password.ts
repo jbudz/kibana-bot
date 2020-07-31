@@ -1,12 +1,7 @@
-import {
-  getConfigVar,
-  RouteHandler,
-  UnauthorizedError,
-} from '@spalger/micro-plus'
+import { Handler } from './route'
+import { UnauthorizedError } from './error_response'
 
-const PASSWORD = getConfigVar('DIRECT_API_PASSWORD')
-
-export function requireDirectApiPassword(handler: RouteHandler): RouteHandler {
+export function requireDirectApiPassword(handler: Handler): Handler {
   return async ctx => {
     const [type = '', base64 = ''] = (ctx.header('authorization') || '')
       .trim()
@@ -20,7 +15,11 @@ export function requireDirectApiPassword(handler: RouteHandler): RouteHandler {
       .toString('utf8')
       .split(':')
 
-    if (!username || !password || password !== PASSWORD) {
+    if (
+      !username ||
+      !password ||
+      password !== ctx.server.config.directApiPassword
+    ) {
       throw new UnauthorizedError()
     }
 

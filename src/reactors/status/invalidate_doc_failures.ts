@@ -34,35 +34,42 @@ export const invalidateDocFailures = new Reactor<GithubWebhookCommitStatus>({
     }
 
     if (isPrUpdatedSinceCommit.length) {
-      log.info(
-        'found %d prs with this commit which have been updated since: %j',
-        isPrUpdatedSinceCommit.length,
-        isPrUpdatedSinceCommit,
-      )
+      log.info({
+        type: 'invalidateDocCiFailures - found updated prs',
+        message: `found ${isPrUpdatedSinceCommit.length} prs with this commit which have been updated since`,
+        extra: {
+          isPrUpdatedSinceCommit,
+        },
+      })
     }
 
     if (isPrIncludingDocs.length) {
-      log.info(
-        'found %d prs with this commit which include docs: %j',
-        isPrIncludingDocs.length,
-        isPrIncludingDocs,
-      )
+      log.info({
+        type: 'invalidateDocCiFailures - found prs including doc changes',
+        message: `found ${isPrIncludingDocs.length} prs with this commit which include doc changes`,
+        extra: {
+          isPrIncludingDocs,
+        },
+      })
     }
 
     if (isPrNotIncludingDocs.length) {
-      log.info(
-        'found %d prs with this commit which do not include docs: %j',
-        isPrNotIncludingDocs.length,
-        isPrNotIncludingDocs,
-      )
+      log.info({
+        type: 'invalidateDocCiFailures - found prs not including doc changes',
+        message: `found ${isPrNotIncludingDocs.length} prs with this commit which do not include doc changes`,
+        extra: {
+          isPrNotIncludingDocs,
+        },
+      })
     }
 
     if (isPrNotIncludingDocs.length && !isPrIncludingDocs.length) {
-      log.info(
-        `overwriting %j status of commit %j since it's not relevant`,
-        ES_DOCS_CONTEXT,
-        sha,
-      )
+      log.info({
+        type: 'invalidateDocCiFailures - overwriting',
+        extra: {
+          sha,
+        },
+      })
 
       await githubApi.setCommitStatus(sha, {
         context: ES_DOCS_CONTEXT,
