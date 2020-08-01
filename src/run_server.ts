@@ -1,4 +1,4 @@
-import 'source-map-support/register'
+import './setup_env'
 import apm from 'elastic-apm-node'
 import { Secrets } from './secrets'
 

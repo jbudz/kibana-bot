@@ -4,7 +4,7 @@ COPY package.json yarn.lock ./
 
 FROM base AS builder
 RUN yarn install
-COPY .eslintignore .eslintrc.js .prettierrc babel.config.js cli.js index.js tsconfig.json index.js ./
+COPY tsconfig.json ./
 COPY src src
 RUN yarn build
 

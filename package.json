@@ -4,10 +4,12 @@
   "license": "Apache 2.0",
   "main": "dist/run_server.js",
   "scripts": {
-    "build": "babel src -d dist --delete-dir-on-start -x .ts --ignore **/*.test.ts --source-maps",
-    "lint": "yarn eslint . --ext .ts,.js --max-warnings 0",
-    "test": "yarn type_check && yarn lint && yarn jest",
-    "type_check": "tsc --noEmit"
+    "build": "rm -rf dist && tsc",
+    "docker:build": "docker build -t kibana-bot:latest .",
+    "docker:run": "docker run -it --rm -p 8080:8080 --init kibana-bot:latest",
+    "jest": "node scripts/jest",
+    "start": "node dist/run_server.js",
+    "test": "tsc --noEmit && node scripts/eslint && node scripts/jest"
   },
   "jest": {
     "roots": [

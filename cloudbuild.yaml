@@ -6,11 +6,13 @@ steps:
     waitFor: ["-"]
 
   - name: node:12-slim
+    id: test
     entrypoint: yarn
     args: ["test"]
     waitFor: ["install"]
 
   - name: "gcr.io/kaniko-project/executor:latest"
+    id: build
     args:
       [
         "--destination=gcr.io/$PROJECT_ID/kibana-bot:$COMMIT_SHA",
@@ -19,6 +21,8 @@ steps:
     waitFor: ["-"]
 
   - name: "gcr.io/cloud-builders/gcloud"
+    id: deploy
+    waitFor: ["build", "test"]
     args:
       [
         "beta",
@@ -32,12 +36,10 @@ steps:
         "--platform",
         "managed",
         "--allow-unauthenticated",
-        "--concurrency",
-        "80",
-        "--max-instances",
-        "1",
+        "--service-account",
+        "kibana-bot@$PROJECT_ID.iam.gserviceaccount.com",
         "--port",
         "8000",
         "--set-env-vars",
-        "NODE_ENV=production,LOG_TO_CONSOLE=true,ES_URL=http://localhost:1234/,GITHUB_WEBHOOK_SECRET=x,DIRECT_API_PASSWORD=x",
+        "NODE_ENV=production",
       ]
