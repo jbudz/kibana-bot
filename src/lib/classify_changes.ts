@@ -24,7 +24,7 @@ const isGithubConfig = (f: File) => fileStartsWith(f, '.github/')
 const isJjbbConfig = (f: File) =>
   fileStartsWith(f, '.ci/') && fileEndsWith(f, '.yml')
 const isPluginReadme = (f: File) =>
-  fileMatch(f, p => /\/plugins\/[^\/]+\/readme\.{md,asciidoc}$/i.test(p))
+  fileMatch(f, p => /\/plugins\/[^\/]+\/readme\.(md|asciidoc)$/i.test(p))
 
 export const getIncludesDocsSiteChanges = (files: File[]) => files.some(isDocs)
 export const getIncludesApmChanges = (files: File[]) => files.some(isApm)
