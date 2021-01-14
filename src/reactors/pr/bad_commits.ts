@@ -7,47 +7,16 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'refresh',
 ]
 
-const STATUS_CONTEXT = 'prbot:bad commits'
+const STATUS_CONTEXT = 'update required'
 
 interface BrokeZone {
   name: string
   branches: string[]
-  start: string
+  start?: string
   stop: string
 }
 
-const PR_BROKE_ZONES: BrokeZone[] = [
-  {
-    name: 'broken Jenkinsfile',
-    branches: ['master'],
-    start: '27d23c41847e79e6e1dfaef25982d7a2165a490d',
-    stop: 'e92857090b0809f3deca7ea519973d0363ff7d27',
-  },
-  {
-    name: 'broken Jenkinsfile',
-    branches: ['7.x'],
-    start: '17670959dc40a3dd8942f352a91a6c57182241f9',
-    stop: 'a82e8825c04bce6b964635b7824cf1e4a1ea0772',
-  },
-  {
-    name: 'broken Jenkinsfile',
-    branches: ['7.4'],
-    start: '14b69dc6ea1fb83c523079f86a71001be532cca1',
-    stop: '6449088013b1de849f6add7e764ef73109c34896',
-  },
-  {
-    name: 'broken Jenkinsfile',
-    branches: ['7.3'],
-    start: '2bbd40d4850412095dcb6f19242c0ab9d8986dcf',
-    stop: '57d4be6eb772c8ed50889e67726f498fd547cea7',
-  },
-  {
-    name: 'broken Jenkinsfile',
-    branches: ['6.8'],
-    start: '2f67e777601249fa3e2d5da827f9414ab3ba6dcc',
-    stop: '281e2fe50cd0b9f7605d82846a6091193dd6dc11',
-  },
-]
+const PR_BROKE_ZONES: BrokeZone[] = []
 
 export const badCommits = new PrReactor({
   id: 'badCommits',
@@ -94,11 +63,16 @@ export const badCommits = new PrReactor({
         continue
       }
 
-      const { totalMissingCommits: commitsBehindStart } = await retryOn404(
-        log,
-        async () =>
-          await githubApi.getMissingCommits(pr.head.sha, brokeZone.start),
-      )
+      const startCommit = brokeZone.start
+      let commitsBehindStart = 0
+
+      if (startCommit) {
+        ;({ totalMissingCommits: commitsBehindStart } = await retryOn404(
+          log,
+          async () =>
+            await githubApi.getMissingCommits(pr.head.sha, startCommit),
+        ))
+      }
 
       results.push({
         brokeZone,
@@ -133,7 +107,7 @@ export const badCommits = new PrReactor({
       await githubApi.setCommitStatus(pr.head.sha, {
         context: STATUS_CONTEXT,
         state: 'failure',
-        description: 'please merge upstream now',
+        description: 'please merge upstream into this PR now',
       })
     }
 
