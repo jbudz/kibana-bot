@@ -16,23 +16,7 @@ interface BrokeZone {
   stop: string
 }
 
-const PR_BROKE_ZONES: BrokeZone[] = [
-  {
-    name: 'Missing SSPL',
-    branches: ['7.11'],
-    stop: '0dc490b72e4ac3743d265d66642af9abe3d0a510',
-  },
-  {
-    name: 'Missing SSPL',
-    branches: ['7.x'],
-    stop: 'baf56d80c4d05c1fa249850a6a89fa07fd838d28',
-  },
-  {
-    name: 'Missing SSPL',
-    branches: ['master'],
-    stop: '170a2956c84d46262a3ae310f89aee6f2580860a',
-  },
-]
+const PR_BROKE_ZONES: BrokeZone[] = []
 
 export const badCommits = new PrReactor({
   id: 'badCommits',
