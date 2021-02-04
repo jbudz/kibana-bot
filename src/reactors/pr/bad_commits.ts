@@ -16,7 +16,23 @@ interface BrokeZone {
   stop: string
 }
 
-const PR_BROKE_ZONES: BrokeZone[] = []
+const PR_BROKE_ZONES: BrokeZone[] = [
+  {
+    name: 'Missing Elastic License 2.0',
+    branches: ['7.11'],
+    stop: '8a3bda4cfd0016e255465ccc2a601c38a1cd7ef7',
+  },
+  {
+    name: 'Missing Elastic License 2.0',
+    branches: ['7.x'],
+    stop: '57af8462e45c92cf06c8338b7b1294205efcad24',
+  },
+  {
+    name: 'Missing Elastic License 2.0',
+    branches: ['master'],
+    stop: '4584a8b570402aa07832cf3e5b520e5d2cfa7166',
+  },
+]
 
 export const badCommits = new PrReactor({
   id: 'badCommits',
