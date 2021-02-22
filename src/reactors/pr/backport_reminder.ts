@@ -4,7 +4,10 @@ import {
   clearBackportReminder,
   clearBackportMissingLabel,
   RELEASE_BRANCH_RE,
+  isGqlRespError,
+  GithubApi,
 } from '../../lib'
+import { GithubApiPr } from '../../github_api_types'
 
 const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'refresh',
@@ -13,6 +16,28 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
 ]
 
 const DISABLE_LABELS = ['backport:skip', 'backported', 'reverted']
+
+async function findSourcePrState(githubApi: GithubApi, pr: GithubApiPr) {
+  for (const [, numberInTitle] of [...pr.title.matchAll(/\(#(\d+)\)/g)]) {
+    try {
+      const srcPrNum = Number.parseInt(numberInTitle, 10)
+      return {
+        srcPrNum,
+        ...(await githubApi.getBackportState(srcPrNum)),
+      }
+    } catch (error) {
+      if (
+        isGqlRespError(error) &&
+        error.resp.errors.some(e => e.type === 'NOT_FOUND')
+      ) {
+        // try the next match
+        continue
+      }
+
+      throw error
+    }
+  }
+}
 
 export const backportReminder = new PrReactor({
   id: 'backportReminder',
@@ -31,16 +56,15 @@ export const backportReminder = new PrReactor({
         }
       }
 
-      const titleMatch = pr.title.match(/\(#(\d+)\)/)
-      if (!titleMatch) {
+      const prState = await findSourcePrState(githubApi, pr)
+      if (!prState) {
         return {
           pr: pr.number,
           unableToExtractSourcePrNumber: true,
         }
       }
 
-      const srcPrNum = Number.parseInt(titleMatch[1], 10)
-      const { backportPrs, labels } = await githubApi.getBackportState(srcPrNum)
+      const { srcPrNum, backportPrs, labels } = prState
 
       // backports don't exist somehow or some are not merged
       if (

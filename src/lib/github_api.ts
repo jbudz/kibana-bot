@@ -5,7 +5,6 @@ import gql from 'graphql-tag'
 import { print } from 'graphql/language/printer'
 import { ASTNode } from 'graphql/language/ast'
 
-import { Log } from '../lib'
 import {
   GithubApiPr,
   GithubApiLabel,
@@ -17,7 +16,8 @@ import {
   GithubApiPullRequestFiles,
 } from '../github_api_types'
 import { makeContextCache } from './req_cache'
-import { getRequestLogger } from './log'
+import { Log, getRequestLogger } from './log'
+import { isObj } from './type_helpers'
 import {
   isAxiosErrorReq,
   isAxiosErrorResp,
@@ -57,6 +57,28 @@ export type PrWithFiles = {
   id: number
   updatedSinceCommit: false
   files: string[]
+}
+
+interface GqlErrorResponse {
+  type: string
+  path: string[]
+  locations: unknown
+  message: string
+}
+interface GqlRespError extends Error {
+  resp: {
+    data: unknown
+    errors: GqlErrorResponse[]
+  }
+}
+
+export function isGqlRespError(error: any): error is GqlRespError {
+  return (
+    isObj(error) &&
+    isObj(error.resp) &&
+    Array.isArray(error.resp.errors) &&
+    error.resp.errors.every(isObj)
+  )
 }
 
 const getCommitDate = (commit: Commit) => {
@@ -411,7 +433,10 @@ export class GithubApi {
     query: ASTNode,
     variables: Record<string, any>,
   ) {
-    const resp = await this.ax.request<{ data: T; errors?: unknown }>({
+    const resp = await this.ax.request<{
+      data: T
+      errors?: GqlErrorResponse[]
+    }>({
       url: 'https://api.github.com/graphql',
       method: 'POST',
       headers: {
@@ -424,7 +449,14 @@ export class GithubApi {
     })
 
     if (resp.data.errors) {
-      throw new Error(`Graphql Errors: ${JSON.stringify(resp.data.errors)}`)
+      const error: Partial<GqlRespError> = new Error(
+        `Graphql Errors: ${JSON.stringify(resp.data.errors)}`,
+      )
+      error.resp = {
+        data: resp.data.data,
+        errors: resp.data.errors,
+      }
+      throw error as GqlRespError
     }
 
     this.checkForGqlRateLimitInfo(resp.data.data)
