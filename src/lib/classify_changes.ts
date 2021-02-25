@@ -16,7 +16,9 @@ const fileIncludes = (f: File, includes: string) =>
 const fileEndsWith = (f: File, endsWith: string) =>
   fileMatch(f, p => p.endsWith(endsWith))
 
-const isDocs = (f: File) => fileStartsWith(f, 'docs/')
+const isDocs = (f: File) =>
+  fileStartsWith(f, 'docs/') ||
+  fileMatch(f, p => /^(x-pack|src|examples)\/.+\.asciidoc$/.test(p))
 const isRfc = (f: File) => fileStartsWith(f, 'rfcs/')
 const isApm = (f: File) => fileIncludes(f, '/apm/')
 const isMarkdown = (f: File) => fileEndsWith(f, '.md')
