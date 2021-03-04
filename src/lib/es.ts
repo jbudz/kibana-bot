@@ -1,4 +1,5 @@
-import { Client } from '@elastic/elasticsearch'
+import { Client, ClientOptions } from '@elastic/elasticsearch'
+import Mock from '@elastic/elasticsearch-mock'
 import { getConfigVar } from '@spalger/micro-plus'
 
 import { Log } from './log'
@@ -37,10 +38,26 @@ export function logEsClientReponseErrors(es: Client, log: Log) {
   })
 }
 
-export function createRootClient(log: Log | null) {
-  const es = new Client({
+export function createRootClient(log: Log | null, dryRun = false) {
+  const config: ClientOptions = {
     node: getConfigVar('ES_URL'),
-  })
+  }
+
+  if (dryRun) {
+    const mock = new Mock()
+    config.Connection = mock.getConnection()
+    mock.add(
+      {
+        method: ['GET', 'POST', 'HEAD', 'PUT'],
+        path: '*',
+      },
+      () => {
+        return { status: 'ok' }
+      },
+    )
+  }
+
+  const es = new Client(config)
 
   if (log !== null) {
     logEsClientReponseErrors(es, log)

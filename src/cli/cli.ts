@@ -30,6 +30,9 @@ CLI to run tasks on Kibana PRs
     print_pr_status [context]      print the specific status of each PR
       --only-failures, -f            Only print failure statuses
     backport_state [pr]            print the backport state of a PR
+
+  Options:
+    --dry-run                      don't commit the change, only output the result
 `
 
 export async function main() {
@@ -37,7 +40,7 @@ export async function main() {
     const log = createRootLog(null)
     const unknownFlagNames: string[] = []
     const argv = getopts(process.argv.slice(2), {
-      boolean: ['only-failures'],
+      boolean: ['only-failures', 'dry-run'],
       alias: {
         f: 'only-failures',
       },
@@ -53,11 +56,22 @@ export async function main() {
       })
     }
 
+    const getAPI = () => {
+      const dry = !!argv['dry-run']
+      return new GithubApi(log, getConfigVar('GITHUB_SECRET'), dry)
+    }
+
+    const getESClient = () => {
+      const dry = !!argv['dry-run']
+      return createRootClient(log, dry)
+    }
+
     const [command] = argv._
+
     switch (command) {
       case 'print_pr_status': {
         const [, context] = argv._
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        const githubApi = getAPI()
         await runPrintStatusCommand(githubApi, context, {
           onlyFailures: !!argv['only-failures'],
         })
@@ -65,52 +79,52 @@ export async function main() {
       }
 
       case 'invalidate_apm_ci_failures': {
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        const githubApi = getAPI()
         await runInvalidateApmFailuresCommand(githubApi)
         return
       }
 
       case 'print_base_branches': {
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        const githubApi = getAPI()
         await runPrintBaseBranchesCommand(githubApi)
         return
       }
 
       case 'refresh_pr': {
         const [, prId, reactorId] = argv._
-        const es = createRootClient(log)
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        const es = getESClient()
+        const githubApi = getAPI()
         await runRefreshPrCommand(prId, reactorId, log, es, githubApi)
         return
       }
 
       case 'refresh_all_prs': {
         const [, reactorId] = argv._
-        const es = createRootClient(log)
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        const es = getESClient()
+        const githubApi = getAPI()
         await runRefreshAllPrsCommand(reactorId, log, es, githubApi)
         return
       }
 
       case 'refresh_issue': {
         const [, prId, reactorId] = argv._
-        const es = createRootClient(log)
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        const es = getESClient()
+        const githubApi = getAPI()
         await runRefreshIssueCommand(prId, reactorId, log, es, githubApi)
         return
       }
 
       case 'refresh_all_issues': {
         const [, reactorId] = argv._
-        const es = createRootClient(log)
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        const es = getESClient()
+        const githubApi = getAPI()
         await runRefreshAllIssuesCommand(reactorId, log, es, githubApi)
         return
       }
 
       case 'backport_state': {
         const [, prIdInput] = argv._
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        const githubApi = getAPI()
         await runBackportStateCommand(githubApi, {
           prIdInput,
         })
@@ -119,8 +133,8 @@ export async function main() {
 
       case 'refresh_all_labels': {
         const [, reactorId] = argv._
-        const es = createRootClient(log)
-        const githubApi = new GithubApi(log, getConfigVar('GITHUB_SECRET'))
+        const es = getESClient()
+        const githubApi = getAPI()
         await runRefreshAllLabelsCommand(log, es, githubApi, reactorId)
         return
       }
