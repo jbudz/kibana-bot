@@ -100,6 +100,7 @@ export class GithubApi {
   public constructor(
     private readonly log: Log,
     private readonly secret: string,
+    private readonly dryRun: boolean = false,
   ) {}
 
   public async getMissingCommits(
@@ -142,6 +143,14 @@ export class GithubApi {
   }
 
   public async setCommitStatus(ref: string, options: CommitStatusOptions) {
+    if (this.dryRun) {
+      const status = await this.getCommitStatus(ref)
+      this.log.info(`Dry Run: change from ${status.state} to ${options.state}`)
+      this.log.info(`Dry Run: ${options.context}`)
+      this.log.info(`Dry Run: ${options.description}`)
+      return
+    }
+
     const shaComponent = encodeURIComponent(ref)
     const url = `/repos/elastic/kibana/statuses/${shaComponent}`
     await this.post(url, {}, options)
@@ -617,8 +626,32 @@ export class GithubApi {
   }
 
   public async setPrLabels(prId: number, labels: string[]) {
-    const resp = await this.post<GithubApiPr>(
-      this.issuesUrl(prId),
+    if (this.dryRun) {
+      const pr = await this.getPr(prId)
+      const prLabels = pr.labels.map(label => label.name)
+      this.log.info(`Dry Run: labels before ${prLabels}`)
+      this.log.info(`Dry Run: labels after ${labels} `)
+      return pr.labels
+    }
+
+    return await this.commitLabels(prId, labels)
+  }
+
+  public async setIssueLabels(issueId: number, labels: string[]) {
+    if (this.dryRun) {
+      const issue = await this.getIssue(issueId)
+      const issueLabels = issue.labels.map(label => label.name)
+      this.log.info(`Dry Run: labels before ${issueLabels}`)
+      this.log.info(`Dry Run: labels after ${labels} `)
+      return issue.labels
+    }
+
+    return await this.commitLabels(issueId, labels)
+  }
+
+  private async commitLabels(itemId: number, labels: string[]) {
+    const resp = await this.post<GithubApiIssue>(
+      this.issuesUrl(itemId),
       {},
       {
         labels,
@@ -629,6 +662,13 @@ export class GithubApi {
   }
 
   public async addCommentToPr(prId: number, commentBody: string) {
+    if (this.dryRun) {
+      const pr = await this.getPr(prId)
+      this.log.info(`Dry Run: add comment to ${pr.number}: ${pr.title}`)
+      this.log.info(`Dry Run: comment is "${commentBody}"`)
+      return
+    }
+
     const url = `${this.issuesUrl(prId)}/comments`
     await this.post<unknown>(
       url,
