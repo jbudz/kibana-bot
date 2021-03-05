@@ -5,6 +5,8 @@ import { ciNotRequired } from './ci_not_required'
 import { badCommits } from './bad_commits'
 import { backportReminder } from './backport_reminder'
 import { communityPr } from './community_pr'
+import { addLabelReactor } from './add_label_reactor'
+import { missingLabelReactor } from './missing_label_reactor'
 
 export const prReactors = [
   outdated,
@@ -14,4 +16,6 @@ export const prReactors = [
   badCommits,
   backportReminder,
   communityPr,
+  addLabelReactor,
+  missingLabelReactor,
 ]
