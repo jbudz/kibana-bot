@@ -56,7 +56,7 @@ export const missingLabelReactor = new PrReactor({
       await githubApi.setCommitStatus(pr.head.sha, {
         context: 'prbot:required labels',
         description: `${
-          added.length > 1 ? 'Several labels are' : 'Label is '
+          added.length > 1 ? 'Several labels are' : 'Label is'
         } missing: ${added.join(', ')}`,
         state: 'failure',
       })
