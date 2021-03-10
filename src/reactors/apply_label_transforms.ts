@@ -8,10 +8,8 @@ export const applyLabelTransforms = (
     ...currentLabels,
   ])
 
-  const diff = [
-    ...labels.filter(label => !currentLabels.includes(label)),
-    ...currentLabels.filter(label => !labels.includes(label)),
-  ]
+  const added = labels.filter(label => !currentLabels.includes(label))
+  const removed = currentLabels.filter(label => !labels.includes(label))
 
-  return diff.length ? labels : null
+  return added.length || removed.length ? { added, removed, labels } : null
 }

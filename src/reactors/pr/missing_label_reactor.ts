@@ -45,13 +45,19 @@ export const missingLabelReactor = new PrReactor({
     const isBasedOnReleaseBranch = RELEASE_BRANCH_RE.test(pr.base.ref)
     const isBackport = existingLabels.includes('backport')
 
-    if (transformedLabels && isBasedOnReleaseBranch && !isBackport) {
+    if (
+      transformedLabels &&
+      transformedLabels.added.length > 0 &&
+      isBasedOnReleaseBranch &&
+      !isBackport
+    ) {
+      const { added } = transformedLabels
       await new InvalidLabelLog(es, log).add(pr.number)
       await githubApi.setCommitStatus(pr.head.sha, {
         context: 'prbot:required labels',
         description: `${
-          transformedLabels.length > 1 ? 'Several labels are' : 'Label is '
-        } missing: ${transformedLabels.join(', ')}`,
+          added.length > 1 ? 'Several labels are' : 'Label is '
+        } missing: ${added.join(', ')}`,
         state: 'failure',
       })
     } else {

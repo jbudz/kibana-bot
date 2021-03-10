@@ -35,7 +35,8 @@ export const addLabelReactor = new IssueReactor({
     )
 
     if (transformedLabels) {
-      await githubApi.setIssueLabels(issue.number, transformedLabels)
+      const { labels } = transformedLabels
+      await githubApi.setIssueLabels(issue.number, labels)
     }
 
     return {

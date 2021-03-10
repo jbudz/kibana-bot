@@ -46,7 +46,8 @@ export const addLabelReactor = new PrReactor({
     const isBackport = existingLabels.includes('backport')
 
     if (transformedLabels && isBasedOnReleaseBranch && !isBackport) {
-      await githubApi.setPrLabels(pr.number, transformedLabels)
+      const { labels } = transformedLabels
+      await githubApi.setPrLabels(pr.number, labels)
     }
 
     return {

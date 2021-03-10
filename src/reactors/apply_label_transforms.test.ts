@@ -55,11 +55,17 @@ it('calls the transform functions in order', () => {
 it('returns the new label list if label was added', () => {
   expect(applyLabelTransforms(['foo', 'bar'], [l => [...l, 'baz']]))
     .toMatchInlineSnapshot(`
-    Array [
-      "foo",
-      "bar",
-      "baz",
-    ]
+    Object {
+      "added": Array [
+        "baz",
+      ],
+      "labels": Array [
+        "foo",
+        "bar",
+        "baz",
+      ],
+      "removed": Array [],
+    }
   `)
 })
 
@@ -70,10 +76,42 @@ it('returns the new label list if a label was removed', () => {
       [labels => labels.filter(l => l.startsWith('b'))],
     ),
   ).toMatchInlineSnapshot(`
-    Array [
-      "bar",
-      "box",
-    ]
+    Object {
+      "added": Array [],
+      "labels": Array [
+        "bar",
+        "box",
+      ],
+      "removed": Array [
+        "foo",
+      ],
+    }
+  `)
+})
+
+it('returns the new label list if a label was added and a label was removed', () => {
+  expect(
+    applyLabelTransforms(
+      ['foo', 'bar', 'box'],
+      [
+        labels => labels.filter(l => l.startsWith('b')),
+        labels => [...labels, 'zip'],
+      ],
+    ),
+  ).toMatchInlineSnapshot(`
+    Object {
+      "added": Array [
+        "zip",
+      ],
+      "labels": Array [
+        "bar",
+        "box",
+        "zip",
+      ],
+      "removed": Array [
+        "foo",
+      ],
+    }
   `)
 })
 
