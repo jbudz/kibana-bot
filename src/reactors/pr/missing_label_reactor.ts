@@ -66,10 +66,17 @@ export const missingLabelReactor = new PrReactor({
         state: 'failure',
       })
     } else {
-      await githubApi.setCommitStatus(pr.head.sha, {
-        context: 'prbot:required labels',
-        state: 'success',
-      })
+      const combinedStatus = await githubApi.getCommitStatus(pr.head.sha)
+      const status = combinedStatus.statuses.find(
+        s => s.context === 'prbot:required labels',
+      )
+
+      if (status && status.state !== 'success') {
+        await githubApi.setCommitStatus(pr.head.sha, {
+          context: 'prbot:required labels',
+          state: 'success',
+        })
+      }
     }
 
     return {

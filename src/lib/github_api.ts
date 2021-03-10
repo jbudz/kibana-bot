@@ -144,8 +144,12 @@ export class GithubApi {
 
   public async setCommitStatus(ref: string, options: CommitStatusOptions) {
     if (this.dryRun) {
-      const status = await this.getCommitStatus(ref)
-      this.log.info(`Dry Run: change from ${status.state} to ${options.state}`)
+      const combinedStatus = await this.getCommitStatus(ref)
+      const status = combinedStatus.statuses.find(
+        s => s.context === options.context,
+      )
+
+      this.log.info(`Dry Run: change from ${status?.state} to ${options.state}`)
       this.log.info(`Dry Run: ${options.context}`)
       this.log.info(`Dry Run: ${options.description}`)
       return
