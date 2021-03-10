@@ -1,4 +1,4 @@
-import { LabelTransform } from '../reactors'
+import { LabelTransform } from '../reactors/apply_label_transforms'
 
 const LABEL_PRESENTATION_TEAM = 'Team:Presentation'
 const LABEL_CANVAS = 'Feature:Canvas'
