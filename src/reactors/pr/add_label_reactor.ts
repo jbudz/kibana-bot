@@ -34,11 +34,7 @@ export const addLabelReactor = new PrReactor({
   async exec({ input: { pr, action }, githubApi, log }) {
     log.info(`pr #${pr.number} [action=${action}]`, { action })
     const labelNames = pr.labels.map(label => label.name)
-    let labels = [...labelNames]
-
-    labelTransforms.forEach(check => {
-      labels = check(labels)
-    })
+    const labels = labelTransforms.reduce((acc, transform) => transform(acc), [...labelNames])
 
     const diff = labels.filter(label => !labelNames.includes(label))
 
