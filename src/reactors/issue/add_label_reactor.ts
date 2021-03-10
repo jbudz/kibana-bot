@@ -1,6 +1,6 @@
-import { LabelTransform, performLabelTransform } from '../'
-import { IssueReactorInput, IssueReactor } from './issue_reactor'
 import { issueLabelTransforms as presentationTeamTransforms } from '../../teams/presentation_team'
+import { LabelTransform, applyLabelTransforms } from '../apply_label_transforms'
+import { IssueReactorInput, IssueReactor } from './issue_reactor'
 
 /**
  * Teams and other interested parties should add their label transform functions to this
@@ -29,7 +29,7 @@ export const addLabelReactor = new IssueReactor({
     log.info(`issue #${issue.number} [action=${action}]`, { action })
 
     const existingLabels = issue.labels.map(label => label.name)
-    const transformedLabels = performLabelTransform(
+    const transformedLabels = applyLabelTransforms(
       existingLabels,
       labelTransforms,
     )

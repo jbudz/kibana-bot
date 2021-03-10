@@ -1,6 +1,6 @@
-import { LabelTransform, performLabelTransform } from '../'
 import { RELEASE_BRANCH_RE } from '../../lib'
 import { prAddLabelTransforms as presentationTeamTransforms } from '../../teams/presentation_team'
+import { LabelTransform, applyLabelTransforms } from '../apply_label_transforms'
 import { ReactorInput, PrReactor } from './pr_reactor'
 
 /**
@@ -35,7 +35,7 @@ export const addLabelReactor = new PrReactor({
     log.info(`pr #${pr.number} [action=${action}]`, { action })
 
     const existingLabels = pr.labels.map(label => label.name)
-    const transformedLabels = performLabelTransform(
+    const transformedLabels = applyLabelTransforms(
       existingLabels,
       labelTransforms,
     )
