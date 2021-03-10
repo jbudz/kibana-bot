@@ -3,7 +3,11 @@ import { Route } from '@spalger/micro-plus'
 import { prReactors, runReactors } from '../reactors'
 import { getRequestLogger, InvalidLabelLog } from '../lib'
 
-const LABEL_REACTORS = ['releaseNoteLabels', 'releaseVersionLabels']
+const LABEL_REACTORS = [
+  'releaseNoteLabels',
+  'releaseVersionLabels',
+  'prMissingLabelReactor',
+]
 
 export const fixupInvalidLabelsRoute = new Route(
   'GET',
