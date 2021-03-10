@@ -36,6 +36,8 @@ export const addLabelReactor = new IssueReactor({
 
     if (transformedLabels) {
       const { labels } = transformedLabels
+
+      log.info('adding labels to issue:', labels)
       await githubApi.setIssueLabels(issue.number, labels)
     }
 

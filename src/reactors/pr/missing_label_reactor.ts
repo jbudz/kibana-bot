@@ -32,7 +32,7 @@ export const missingLabelReactor = new PrReactor({
     RELEVANT_ACTIONS_MISSING_LABEL.includes(action),
 
   async exec({ input: { pr, action }, githubApi, es, log }) {
-    log.info(`issue #${pr.number} [action=${action}]`, { action })
+    log.info(`pr #${pr.number} [action=${action}]`, { action })
 
     const existingLabels = pr.labels.map(label => label.name)
     const transformedLabels = applyLabelTransforms(
@@ -53,11 +53,16 @@ export const missingLabelReactor = new PrReactor({
     ) {
       const { added } = transformedLabels
       await new InvalidLabelLog(es, log).add(pr.number)
+
+      const description = `${
+        added.length > 1 ? 'Several labels are' : 'Label is'
+      } missing: ${added.join(', ')}`
+
+      log.info(`failing status: ${description}`)
+
       await githubApi.setCommitStatus(pr.head.sha, {
         context: 'prbot:required labels',
-        description: `${
-          added.length > 1 ? 'Several labels are' : 'Label is'
-        } missing: ${added.join(', ')}`,
+        description,
         state: 'failure',
       })
     } else {
