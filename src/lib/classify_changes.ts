@@ -28,7 +28,13 @@ const isJjbbConfig = (f: File) =>
 const isPluginReadme = (f: File) =>
   fileMatch(f, p => /\/plugins\/[^\/]+\/readme\.(md|asciidoc)$/i.test(p))
 
-export const getIncludesDocsSiteChanges = (files: File[]) => files.some(isDocs)
+export const getProbablyDocsRelatedChanges = (files: File[]) =>
+  files.some(
+    f =>
+      fileMatch(f, n => /\b(doc|docs|documentation)\b/.test(n)) ||
+      fileEndsWith(f, '.asciidoc'),
+  )
+
 export const getIncludesApmChanges = (files: File[]) => files.some(isApm)
 export const getIsDocsOnlyChange = (files: File[]) =>
   files.every(
