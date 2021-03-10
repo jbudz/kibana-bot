@@ -1,4 +1,4 @@
-import { LabelTransform } from '../'
+import { LabelTransform, performLabelTransform } from '../'
 import { RELEASE_BRANCH_RE } from '../../lib'
 import { prAddLabelTransforms as presentationTeamTransforms } from '../../teams/presentation_team'
 import { ReactorInput, PrReactor } from './pr_reactor'
@@ -33,25 +33,27 @@ export const addLabelReactor = new PrReactor({
 
   async exec({ input: { pr, action }, githubApi, log }) {
     log.info(`pr #${pr.number} [action=${action}]`, { action })
-    const labelNames = pr.labels.map(label => label.name)
-    const labels = labelTransforms.reduce((acc, transform) => transform(acc), [...labelNames])
 
-    const diff = labels.filter(label => !labelNames.includes(label))
+    const existingLabels = pr.labels.map(label => label.name)
+    const transformedLabels = performLabelTransform(
+      existingLabels,
+      labelTransforms,
+    )
 
     // we must check these in exec() since they can change over time so we don't want
     // to orphan a PR that became a backport PR or was retargetted away from master
     const isBasedOnReleaseBranch = RELEASE_BRANCH_RE.test(pr.base.ref)
-    const isBackport = labelNames.includes('backport')
+    const isBackport = existingLabels.includes('backport')
 
-    if (isBasedOnReleaseBranch && diff.length && !isBackport) {
-      await githubApi.setPrLabels(pr.number, labels)
+    if (transformedLabels && isBasedOnReleaseBranch && !isBackport) {
+      await githubApi.setPrLabels(pr.number, transformedLabels)
     }
 
     return {
       pr: pr.number,
       prTitle: pr.title,
-      labelNames,
-      diff,
+      existingLabels,
+      transformedLabels,
       isBasedOnReleaseBranch,
       isBackport,
     }

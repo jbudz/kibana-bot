@@ -1,4 +1,4 @@
-import { LabelTransform } from '../'
+import { LabelTransform, performLabelTransform } from '../'
 import { IssueReactorInput, IssueReactor } from './issue_reactor'
 import { issueLabelTransforms as presentationTeamTransforms } from '../../teams/presentation_team'
 
@@ -27,17 +27,15 @@ export const addLabelReactor = new IssueReactor({
 
   async exec({ input: { issue, action }, log, githubApi }) {
     log.info(`issue #${issue.number} [action=${action}]`, { action })
-    const labelNames = issue.labels.map(l => l.name)
-    let labels = [...labelNames]
 
-    labelTransforms.forEach(check => {
-      labels = check(labels)
-    })
+    const existingLabels = issue.labels.map(label => label.name)
+    const transformedLabels = performLabelTransform(
+      existingLabels,
+      labelTransforms,
+    )
 
-    const diff = labels.filter(label => !labelNames.includes(label))
-
-    if (diff.length > 0) {
-      await githubApi.setIssueLabels(issue.number, labels)
+    if (transformedLabels) {
+      await githubApi.setIssueLabels(issue.number, transformedLabels)
     }
 
     return {

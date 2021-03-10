@@ -1,4 +1,4 @@
-import { LabelTransform } from '../'
+import { LabelTransform, performLabelTransform } from '../'
 import { RELEASE_BRANCH_RE, InvalidLabelLog } from '../../lib'
 import { prMissingLabelTransforms as presentationTeamTransforms } from '../../teams/presentation_team'
 import { ReactorInput, PrReactor } from './pr_reactor'
@@ -33,27 +33,25 @@ export const missingLabelReactor = new PrReactor({
 
   async exec({ input: { pr, action }, githubApi, es, log }) {
     log.info(`issue #${pr.number} [action=${action}]`, { action })
-    const labelNames = pr.labels.map(label => label.name)
-    let labels = [...labelNames]
 
-    labelTransforms.forEach(check => {
-      labels = check(labels)
-    })
-
-    const diff = labels.filter(label => !labelNames.includes(label))
+    const existingLabels = pr.labels.map(label => label.name)
+    const transformedLabels = performLabelTransform(
+      existingLabels,
+      labelTransforms,
+    )
 
     // we must check these in exec() since they can change over time so we don't want
     // to orphan a PR that became a backport PR or was retargetted away from master
     const isBasedOnReleaseBranch = RELEASE_BRANCH_RE.test(pr.base.ref)
-    const isBackport = labelNames.includes('backport')
+    const isBackport = existingLabels.includes('backport')
 
-    if (isBasedOnReleaseBranch && diff.length > 0 && !isBackport) {
+    if (transformedLabels && isBasedOnReleaseBranch && !isBackport) {
       await new InvalidLabelLog(es, log).add(pr.number)
       await githubApi.setCommitStatus(pr.head.sha, {
         context: 'prbot:required labels',
         description: `${
-          diff.length > 1 ? 'Several labels are' : 'Label is '
-        } missing: ${diff.join(', ')}`,
+          transformedLabels.length > 1 ? 'Several labels are' : 'Label is '
+        } missing: ${transformedLabels.join(', ')}`,
         state: 'failure',
       })
     } else {
@@ -66,8 +64,8 @@ export const missingLabelReactor = new PrReactor({
     return {
       pr: pr.number,
       prTitle: pr.title,
-      labelNames,
-      diff,
+      existingLabels,
+      transformedLabels,
       isBasedOnReleaseBranch,
       isBackport,
     }
