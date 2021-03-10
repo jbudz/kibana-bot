@@ -20,5 +20,5 @@ export const performLabelTransform = (
     ...currentLabels.filter(label => !labels.includes(label)),
   ]
 
-  return diff ? labels : null
+  return diff.length ? labels : null
 }
