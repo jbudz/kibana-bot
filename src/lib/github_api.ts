@@ -693,7 +693,7 @@ export class GithubApi {
       return false
     }
 
-    if (error.response.status === 502) {
+    if (error.response.status === 502 || error.response.status === 500) {
       return true
     }
 
