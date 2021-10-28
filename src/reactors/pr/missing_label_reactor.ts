@@ -41,7 +41,7 @@ export const missingLabelReactor = new PrReactor({
     )
 
     // we must check these in exec() since they can change over time so we don't want
-    // to orphan a PR that became a backport PR or was retargetted away from master
+    // to orphan a PR that became a backport PR or was retargetted away from main
     const isBasedOnReleaseBranch = RELEASE_BRANCH_RE.test(pr.base.ref)
     const isBackport = existingLabels.includes('backport')
 
