@@ -18,7 +18,9 @@ const fileEndsWith = (f: File, endsWith: string) =>
 
 const isDocs = (f: File) =>
   fileStartsWith(f, 'docs/') ||
-  fileMatch(f, p => /^(x-pack|src|examples)\/.+\.asciidoc$/.test(p))
+  fileMatch(f, p => /^(x-pack|src|examples)\/.+\.asciidoc$/.test(p)) ||
+  fileMatch(f, p => /^\/doc_links_service\.ts$/.test(p))
+const isTs = (f: File) => fileEndsWith(f, '.ts')
 const isRfc = (f: File) => fileStartsWith(f, 'rfcs/')
 const isApm = (f: File) => fileIncludes(f, '/apm/')
 const isMarkdown = (f: File) => fileEndsWith(f, '.md')
@@ -38,7 +40,10 @@ export const getProbablyDocsRelatedChanges = (files: File[]) =>
 export const getIncludesApmChanges = (files: File[]) => files.some(isApm)
 export const getIsDocsOnlyChange = (files: File[]) =>
   files.every(
-    f => isDocs(f) || isRfc(f) || (isMarkdown(f) && !isPluginReadme(f)),
+    f =>
+      (isDocs(f) && !isTs(f)) ||
+      isRfc(f) ||
+      (isMarkdown(f) && !isPluginReadme(f)),
   )
 export const getIsConfigOnlyChange = (files: File[]) =>
   files.every(f => isGithubConfig(f) || isJjbbConfig(f))
