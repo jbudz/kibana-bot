@@ -29,7 +29,7 @@ const PR_BROKE_ZONES: BrokeZone[] = [
   },
   {
     name: 'Missing Elastic License 2.0',
-    branches: ['master'],
+    branches: ['main'],
     stop: '4584a8b570402aa07832cf3e5b520e5d2cfa7166',
   },
 ]
