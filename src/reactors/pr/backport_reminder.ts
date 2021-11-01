@@ -48,7 +48,7 @@ export const backportReminder = new PrReactor({
     pr.merged,
 
   async exec({ input: { pr }, es, log, githubApi }) {
-    if (pr.base.ref !== 'main') {
+    if (pr.base.ref !== 'main' && pr.base.ref !== 'master') {
       if (!pr.labels.some(l => l.name === 'backport')) {
         return {
           pr: pr.number,
