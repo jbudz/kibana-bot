@@ -25,10 +25,21 @@ const IGNORED_BRANCHES = [
 export const outdated = new PrReactor({
   id: 'outdated',
 
-  filter: ({ input }) =>
-    !input.pr.draft && RELEVANT_ACTIONS.includes(input.action),
+  filter: ({ input }) => RELEVANT_ACTIONS.includes(input.action),
 
   async exec({ githubApi, input: { pr, action }, es, log }) {
+    if (pr.draft) {
+      await githubApi.setCommitStatus(pr.head.sha, {
+        context: 'prbot:outdated',
+        description: `Draft PRs can't be outdated`,
+        state: 'success',
+      })
+      return {
+        pr: pr.number,
+        draft: true,
+      }
+    }
+
     // when prs are closed, or if they were previously closed and
     // we're refreshing, then cleanup
     if (action === 'closed' || pr.closed_at) {

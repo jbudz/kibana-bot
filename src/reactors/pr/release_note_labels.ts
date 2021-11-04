@@ -14,9 +14,21 @@ export const releaseNoteLabels = new PrReactor({
   id: 'releaseNoteLabels',
 
   filter: ({ input: { action, pr } }) =>
-    pr.state === 'open' && !pr.draft && RELEVANT_ACTIONS.includes(action),
+    pr.state === 'open' && RELEVANT_ACTIONS.includes(action),
 
   async exec({ input: { pr }, githubApi, es, log }) {
+    if (pr.draft) {
+      await githubApi.setCommitStatus(pr.head.sha, {
+        context: 'prbot:release note labels',
+        description: 'Draft PRs do not require release note labels',
+        state: 'success',
+      })
+      return {
+        pr: pr.number,
+        draft: true,
+      }
+    }
+
     const labelNames = pr.labels.map(label => label.name)
     const missingReleaseNotesLabel = !labelNames.some(n =>
       n.startsWith('release_note:'),

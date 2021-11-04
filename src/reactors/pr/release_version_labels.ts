@@ -18,9 +18,21 @@ export const releaseVersionLabels = new PrReactor({
   id: 'releaseVersionLabels',
 
   filter: ({ input: { action, pr } }) =>
-    pr.state === 'open' && !pr.draft && RELEVANT_ACTIONS.includes(action),
+    pr.state === 'open' && RELEVANT_ACTIONS.includes(action),
 
   async exec({ input: { pr }, githubApi, es, log }) {
+    if (pr.draft) {
+      await githubApi.setCommitStatus(pr.head.sha, {
+        context: 'prbot:release version labels',
+        description: 'Draft PRs do not require release version labels',
+        state: 'success',
+      })
+      return {
+        pr: pr.number,
+        draft: true,
+      }
+    }
+
     const labelNames = pr.labels.map(label => label.name)
     const missingReleaseVersionLabel = !labelNames.some(n =>
       RELEASE_VERSION_LABEL_RE.test(n),
