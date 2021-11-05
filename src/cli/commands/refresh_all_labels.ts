@@ -17,19 +17,17 @@ export async function runRefreshAllLabelsCommand(
   }
 
   for await (const label of githubApi.iterAllLabels()) {
-    log.info(
-      `✅ ${label.name}`,
-      await runReactors(reactors, {
-        context: {
-          githubApi,
-          log,
-          es,
-          input: {
-            action: 'refresh',
-            label,
-          },
+    await runReactors(reactors, {
+      context: {
+        githubApi,
+        log,
+        es,
+        input: {
+          action: 'refresh',
+          label,
         },
-      }),
-    )
+      },
+    })
+    log.info(`✅ ${label.name}`)
   }
 }

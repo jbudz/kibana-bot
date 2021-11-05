@@ -15,19 +15,17 @@ export async function runRefreshAllIssuesCommand(
   }
 
   for await (const issue of githubApi.ittrAllOpenIssues()) {
-    log.info(
-      `✅ #${issue.number}`,
-      await runReactors([reactor], {
-        context: {
-          githubApi,
-          log,
-          es,
-          input: {
-            action: 'refresh',
-            issue,
-          },
+    await runReactors([reactor], {
+      context: {
+        githubApi,
+        log,
+        es,
+        input: {
+          action: 'refresh',
+          issue,
         },
-      }),
-    )
+      },
+    })
+    log.info(`✅ #${issue.number}`)
   }
 }

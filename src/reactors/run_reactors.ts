@@ -35,6 +35,6 @@ export async function runReactors<E>(
   }
 
   await Promise.all(promises)
-
-  return combinedResult
+  context.log.info('ran', promises.length, 'reactors:', combinedResult)
+  return
 }

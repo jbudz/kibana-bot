@@ -23,7 +23,7 @@ export async function runRefreshIssueCommand(
   }
 
   const issue = await githubApi.getIssue(Number.parseInt(issueId, 10))
-  const body = await runReactors(
+  await runReactors(
     issueReactors.filter(r => !reactorId || r.id === reactorId),
     {
       context: {
@@ -38,5 +38,5 @@ export async function runRefreshIssueCommand(
     },
   )
 
-  log.info('✅ success', body)
+  log.info('✅ success')
 }

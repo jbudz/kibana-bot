@@ -23,7 +23,7 @@ export async function runRefreshPrCommand(
   }
 
   const pr = await githubApi.getPr(Number.parseInt(prId, 10))
-  const body = await runReactors(
+  await runReactors(
     prReactors.filter(r => !reactorId || r.id === reactorId),
     {
       context: {
@@ -39,5 +39,5 @@ export async function runRefreshPrCommand(
     },
   )
 
-  log.info('✅ success', body)
+  log.info('✅ success')
 }

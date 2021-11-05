@@ -15,20 +15,18 @@ export async function runRefreshAllPrsCommand(
   }
 
   for await (const pr of githubApi.ittrAllOpenPrs()) {
-    log.info(
-      `✅ #${pr.number}`,
-      await runReactors([reactor], {
-        context: {
-          githubApi,
-          log,
-          es,
-          input: {
-            action: 'refresh',
-            pr,
-            prFromApi: true,
-          },
+    await runReactors([reactor], {
+      context: {
+        githubApi,
+        log,
+        es,
+        input: {
+          action: 'refresh',
+          pr,
+          prFromApi: true,
         },
-      }),
-    )
+      },
+    })
+    log.info(`✅ #${pr.number}`)
   }
 }
