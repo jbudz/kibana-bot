@@ -60,34 +60,19 @@ export const outdated = new PrReactor({
     }
 
     if (ignoredBecause) {
-      const headStatus = await githubApi.getCommitStatus(pr.head.sha)
-      const outdatedStatus = headStatus.statuses.find(
-        s => s.context === 'prbot:outdated',
-      )
-
-      if (!outdatedStatus) {
-        return {
-          pr: pr.number,
-          ignoredBecause,
-        }
-      }
-
       await clearExpirationTime(es, pr.number)
-
-      if (outdatedStatus.state === 'failure') {
-        return {
-          pr: pr.number,
-          ignoredBecause,
-          ...(await applyOutdatedResult({
-            es,
-            githubApi,
-            prNumber: pr.number,
-            prHeadSha: pr.head.sha,
-            prUserLogin: pr.user.login,
-            timeBehind: 0,
-            missingRequiredCommit: false,
-          })),
-        }
+      return {
+        pr: pr.number,
+        ignoredBecause,
+        ...(await applyOutdatedResult({
+          es,
+          githubApi,
+          prNumber: pr.number,
+          prHeadSha: pr.head.sha,
+          prUserLogin: pr.user.login,
+          timeBehind: 0,
+          missingRequiredCommit: false,
+        })),
       }
     }
 
