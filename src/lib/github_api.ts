@@ -643,6 +643,19 @@ export class GithubApi {
     return await this.commitLabels(prId, labels)
   }
 
+  public async removeLabel(prOrIssueId: number, label: string) {
+    if (this.dryRun) {
+      this.log.info(`Dry Run: removing ${label} label`)
+      return
+    }
+
+    return await this.req({
+      method: 'DELETE',
+      url: this.issueLabelUrl(prOrIssueId, label),
+      ignoredErrorStatuses: [404],
+    })
+  }
+
   public async addLabel(prOrIssueId: number, label: string) {
     if (this.dryRun) {
       this.log.info(`Dry Run: adding ${label} label`)
@@ -750,6 +763,7 @@ export class GithubApi {
       url: string
       params?: { [key: string]: any }
       body?: { [key: string]: any }
+      ignoredErrorStatuses?: number[]
     } & RetryOptions,
   ): Promise<AxiosResponse<Result>> {
     const {
@@ -759,6 +773,7 @@ export class GithubApi {
       body,
       attempt = 1,
       forceRetries = false,
+      ignoredErrorStatuses = [],
     } = options
 
     try {
@@ -767,6 +782,14 @@ export class GithubApi {
         url,
         params,
         data: body,
+        validateStatus: status => {
+          return (
+            (status >= 200 && status < 300) ||
+            (ignoredErrorStatuses
+              ? ignoredErrorStatuses.includes(status)
+              : false)
+          )
+        },
       })
 
       this.checkForRateLimitInfo(resp)

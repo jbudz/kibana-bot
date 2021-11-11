@@ -114,12 +114,8 @@ export async function clearBackportReminder(es: Client, prNumber: number) {
 export async function clearBackportMissingLabel(
   githubApi: GithubApi,
   prNumber: number,
-  labels: string[],
 ) {
-  const cleanLabels = labels.filter(l => l !== BACKPORT_MISSING_LABEL)
-  if (cleanLabels.length !== labels.length) {
-    await githubApi.setPrLabels(prNumber, cleanLabels)
-  }
+  await githubApi.removeLabel(prNumber, BACKPORT_MISSING_LABEL)
 }
 
 export async function maybeSendBackportReminder({
@@ -146,7 +142,7 @@ export async function maybeSendBackportReminder({
   /** BACKPORTS EXIST AND ARE ALL MERGED */
   if (backportPrs.length && backportPrs.every(pr => pr.state === 'MERGED')) {
     await clearBackportReminder(es, prNumber)
-    await clearBackportMissingLabel(githubApi, prNumber, labels)
+    await clearBackportMissingLabel(githubApi, prNumber)
 
     return {
       prNumber,
@@ -161,7 +157,7 @@ export async function maybeSendBackportReminder({
 
   // add the backport missing label if it's not already defined
   if (!labels.includes(BACKPORT_MISSING_LABEL)) {
-    await githubApi.setPrLabels(prNumber, [...labels, BACKPORT_MISSING_LABEL])
+    await githubApi.addLabel(prNumber, BACKPORT_MISSING_LABEL)
   }
 
   // comment on the pr about the missing backport

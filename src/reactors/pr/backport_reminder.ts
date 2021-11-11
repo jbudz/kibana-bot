@@ -66,7 +66,7 @@ export const backportReminder = new PrReactor({
         }
       }
 
-      const { srcPrNum, backportPrs, labels } = prState
+      const { srcPrNum, backportPrs } = prState
 
       // backports don't exist somehow or some are not merged
       if (
@@ -81,7 +81,7 @@ export const backportReminder = new PrReactor({
       }
 
       await clearBackportReminder(es, srcPrNum)
-      await clearBackportMissingLabel(githubApi, srcPrNum, labels)
+      await clearBackportMissingLabel(githubApi, srcPrNum)
       return {
         pr: pr.number,
         clearedRemindersFromSource: true,
@@ -91,11 +91,7 @@ export const backportReminder = new PrReactor({
     const disableLabel = pr.labels.find(l => DISABLE_LABELS.includes(l.name))
     if (disableLabel) {
       await clearBackportReminder(es, pr.number)
-      await clearBackportMissingLabel(
-        githubApi,
-        pr.number,
-        pr.labels.map(l => l.name),
-      )
+      await clearBackportMissingLabel(githubApi, pr.number)
 
       return {
         pr: pr.number,
@@ -111,11 +107,7 @@ export const backportReminder = new PrReactor({
       versionLabels[0].name === CURRENT_MAIN_VERSION
     ) {
       await clearBackportReminder(es, pr.number)
-      await clearBackportMissingLabel(
-        githubApi,
-        pr.number,
-        pr.labels.map(l => l.name),
-      )
+      await clearBackportMissingLabel(githubApi, pr.number)
       await githubApi.addLabel(pr.number, 'backport:skip')
 
       return {
