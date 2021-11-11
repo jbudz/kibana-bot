@@ -4,6 +4,7 @@ import {
   clearBackportReminder,
   clearBackportMissingLabel,
   RELEASE_BRANCH_RE,
+  RELEASE_VERSION_LABEL_RE,
   isGqlRespError,
   GithubApi,
 } from '../../lib'
@@ -17,7 +18,6 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
 
 const CURRENT_MAIN_VERSION = 'v8.1.0'
 const DISABLE_LABELS = ['backport:skip', 'backported', 'reverted']
-const VERSION_LABEL_RE = /^v[\d\.]+$/
 
 async function findSourcePrState(githubApi: GithubApi, pr: GithubApiPr) {
   for (const [, numberInTitle] of [...pr.title.matchAll(/\(#(\d+)\)/g)]) {
@@ -103,7 +103,9 @@ export const backportReminder = new PrReactor({
       }
     }
 
-    const versionLabels = pr.labels.filter(l => VERSION_LABEL_RE.test(l.name))
+    const versionLabels = pr.labels.filter(l =>
+      RELEASE_VERSION_LABEL_RE.test(l.name),
+    )
     if (
       versionLabels.length === 1 &&
       versionLabels[0].name === CURRENT_MAIN_VERSION
