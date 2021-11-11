@@ -15,7 +15,9 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'closed',
 ]
 
+const CURRENT_MAIN_VERSION = 'v8.1.0'
 const DISABLE_LABELS = ['backport:skip', 'backported', 'reverted']
+const VERSION_LABEL_RE = /^v[\d\.]+$/
 
 async function findSourcePrState(githubApi: GithubApi, pr: GithubApiPr) {
   for (const [, numberInTitle] of [...pr.title.matchAll(/\(#(\d+)\)/g)]) {
@@ -98,6 +100,25 @@ export const backportReminder = new PrReactor({
       return {
         pr: pr.number,
         reminderCleared: `pr has "${disableLabel}" label`,
+      }
+    }
+
+    const versionLabels = pr.labels.filter(l => VERSION_LABEL_RE.test(l.name))
+    if (
+      versionLabels.length === 1 &&
+      versionLabels[0].name === CURRENT_MAIN_VERSION
+    ) {
+      await clearBackportReminder(es, pr.number)
+      await clearBackportMissingLabel(
+        githubApi,
+        pr.number,
+        pr.labels.map(l => l.name),
+      )
+      await githubApi.addLabel(pr.number, 'backport:skip')
+
+      return {
+        pr: pr.number,
+        reminderCleared: `pr is only backported to current main version`,
       }
     }
 

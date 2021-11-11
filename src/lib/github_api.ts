@@ -1,4 +1,4 @@
-import Axios, { AxiosResponse, Method } from 'axios'
+import Axios, { AxiosInstance, AxiosResponse, Method } from 'axios'
 import parseLinkHeader from 'parse-link-header'
 import { getConfigVar } from '@spalger/micro-plus'
 import gql from 'graphql-tag'
@@ -88,20 +88,22 @@ const getCommitDate = (commit: Commit) => {
 }
 
 export class GithubApi {
-  private readonly ax = Axios.create({
-    baseURL: 'https://api.github.com/',
-    headers: {
-      'User-Agent': 'spalger/kibana-pr-bot',
-      Authorization: `token ${this.secret}`,
-      Accept: 'application/vnd.github.shadow-cat-preview',
-    },
-  })
+  private readonly ax: AxiosInstance
 
   public constructor(
     private readonly log: Log,
     private readonly secret: string,
     private readonly dryRun: boolean = false,
-  ) {}
+  ) {
+    this.ax = Axios.create({
+      baseURL: 'https://api.github.com/',
+      headers: {
+        'User-Agent': 'spalger/kibana-pr-bot',
+        Authorization: `token ${this.secret}`,
+        Accept: 'application/vnd.github.shadow-cat-preview',
+      },
+    })
+  }
 
   public async getMissingCommits(
     refToStartFrom: string,
@@ -641,6 +643,21 @@ export class GithubApi {
     return await this.commitLabels(prId, labels)
   }
 
+  public async addLabel(prOrIssueId: number, label: string) {
+    if (this.dryRun) {
+      this.log.info(`Dry Run: adding ${label} label`)
+      return
+    }
+
+    return await this.req({
+      method: 'POST',
+      url: this.issueLabelUrl(prOrIssueId),
+      body: {
+        labels: [label],
+      },
+    })
+  }
+
   public async setIssueLabels(issueId: number, labels: string[]) {
     if (this.dryRun) {
       const issue = await this.getIssue(issueId)
@@ -719,6 +736,12 @@ export class GithubApi {
   private issuesUrl(id: number) {
     const idComponent = encodeURIComponent(id)
     return `/repos/elastic/kibana/issues/${idComponent}`
+  }
+
+  private issueLabelUrl(id: number, label?: string) {
+    const idComponent = encodeURIComponent(id)
+    const nameSegment = label ? `/${encodeURIComponent(label)}` : ``
+    return `/repos/elastic/kibana/issues/${idComponent}/labels${nameSegment}`
   }
 
   private async req<Result = any>(
