@@ -14,6 +14,7 @@ import { GithubApiPr } from '../../github_api_types'
 const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'refresh',
   'labeled',
+  'unlabeled',
   'closed',
 ]
 
