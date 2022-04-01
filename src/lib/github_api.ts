@@ -683,6 +683,22 @@ export class GithubApi {
     return await this.commitLabels(issueId, labels)
   }
 
+  public async getFileFromMain(path: string) {
+    const resp = await this.req<string>({
+      method: 'GET',
+      url: `/repos/elastic/kibana/contents/${path}`,
+      params: {
+        ref: 'main',
+      },
+      headers: {
+        Accept: 'application/vnd.github.shadow-cat-preview.raw',
+      },
+      alwaysResponseWithText: true,
+    })
+
+    return resp.data
+  }
+
   private async commitLabels(itemId: number, labels: string[]) {
     const resp = await this.post<GithubApiIssue>(
       this.issuesUrl(itemId),
@@ -764,6 +780,8 @@ export class GithubApi {
       params?: { [key: string]: any }
       body?: { [key: string]: any }
       ignoredErrorStatuses?: number[]
+      headers?: { [key: string]: string }
+      alwaysResponseWithText?: boolean
     } & RetryOptions,
   ): Promise<AxiosResponse<Result>> {
     const {
@@ -774,6 +792,8 @@ export class GithubApi {
       attempt = 1,
       forceRetries = false,
       ignoredErrorStatuses = [],
+      headers,
+      alwaysResponseWithText,
     } = options
 
     try {
@@ -782,6 +802,8 @@ export class GithubApi {
         url,
         params,
         data: body,
+        headers,
+        transformResponse: alwaysResponseWithText ? [x => x] : undefined,
         validateStatus: status => {
           return (
             (status >= 200 && status < 300) ||
