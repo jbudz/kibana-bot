@@ -104,7 +104,7 @@ export const backportReminder = new PrReactor({
     )
     if (
       versionLabels.length === 1 &&
-      versionLabels[0].name === (await getLatestVersionLabel(githubApi))
+      versionLabels[0].name === (await getLatestVersionLabel(log, githubApi))
     ) {
       await clearBackportReminder(es, pr.number)
       await clearBackportMissingLabel(githubApi, pr.number)
