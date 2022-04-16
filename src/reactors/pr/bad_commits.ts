@@ -30,6 +30,17 @@ export const badCommits = new PrReactor({
   filter: ({ input }) => RELEVANT_ACTIONS.includes(input.action),
 
   async exec({ githubApi, input: { pr }, log }) {
+    const outdated = await githubApi.getSpecificCommitStatus(
+      pr.head.sha,
+      'prbot:outdated',
+    )
+    if (outdated === 'FAILURE') {
+      return {
+        pr: pr.number,
+        alreadyOutdated: true,
+      }
+    }
+
     const brokeZones = PR_BROKE_ZONES.filter(z =>
       z.branches.includes(pr.base.ref),
     )

@@ -169,6 +169,42 @@ export class GithubApi {
     return resp.data
   }
 
+  public async getSpecificCommitStatus(ref: string, context: string) {
+    const resp = await this.gql<{
+      respository: {
+        object?: {
+          status: {
+            context: {
+              state: 'EXPECTED' | 'ERROR' | 'FAILURE' | 'PENDING' | 'SUCCESS'
+            }
+          }
+        }
+      }
+    }>(
+      gql`
+        query($ref: String!, $context: String!) {
+          repository(owner: "elastic", name: "kibana") {
+            object(expression: $ref) {
+              ... on Commit {
+                status {
+                  context(name: $context) {
+                    state
+                  }
+                }
+              }
+            }
+          }
+        }
+      `,
+      {
+        ref,
+        context,
+      },
+    )
+
+    return resp.respository.object?.status.context.state
+  }
+
   public async getPr(prId: number, options?: { forceRetries?: boolean }) {
     const prIdComponent = encodeURIComponent(`${prId}`)
     const resp = await this.get<GithubApiPr>(
