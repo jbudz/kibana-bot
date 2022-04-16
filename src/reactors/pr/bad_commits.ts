@@ -16,7 +16,13 @@ interface BrokeZone {
   stop: string
 }
 
-const PR_BROKE_ZONES: BrokeZone[] = []
+const PR_BROKE_ZONES: BrokeZone[] = [
+  {
+    name: 'major eslint changes',
+    branches: ['main'],
+    stop: '3730dd0779ed8efd74aee88f57422781ec1ac122',
+  },
+]
 
 export const badCommits = new PrReactor({
   id: 'badCommits',
