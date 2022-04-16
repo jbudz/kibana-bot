@@ -171,11 +171,11 @@ export class GithubApi {
 
   public async getSpecificCommitStatus(ref: string, context: string) {
     const resp = await this.gql<{
-      respository: {
+      respository?: {
         object?: {
-          status: {
-            context: {
-              state: 'EXPECTED' | 'ERROR' | 'FAILURE' | 'PENDING' | 'SUCCESS'
+          status?: {
+            context?: {
+              state?: 'EXPECTED' | 'ERROR' | 'FAILURE' | 'PENDING' | 'SUCCESS'
             }
           }
         }
@@ -202,7 +202,7 @@ export class GithubApi {
       },
     )
 
-    return resp.respository.object?.status.context.state
+    return resp.respository?.object?.status?.context?.state
   }
 
   public async getPr(prId: number, options?: { forceRetries?: boolean }) {
