@@ -171,7 +171,7 @@ export class GithubApi {
 
   public async getSpecificCommitStatus(ref: string, context: string) {
     const resp = await this.gql<{
-      respository?: {
+      repository?: {
         object?: {
           status?: {
             context?: {
@@ -202,7 +202,7 @@ export class GithubApi {
       },
     )
 
-    return resp.respository?.object?.status?.context?.state
+    return resp.repository?.object?.status?.context?.state
   }
 
   public async getPr(prId: number, options?: { forceRetries?: boolean }) {

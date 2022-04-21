@@ -9,13 +9,35 @@ export async function runRefreshAllPrsCommand(
   es: Elasticsearch.Client,
   githubApi: GithubApi,
 ) {
-  const reactor = prReactors.find(reactor => reactor.id === reactorId)
-  if (!reactor) {
+  if (!reactorId) {
+    throw new CliError('reactor id must be specified')
+  }
+
+  const ids = reactorId.split(',').map(id => id.trim())
+  const reactors = prReactors.filter(r => ids.includes(r.id))
+  if (!reactors.length) {
     throw new CliError('reactor id does not match any known reactors')
   }
 
   for await (const pr of githubApi.ittrAllOpenPrs()) {
-    await runReactors([reactor], {
+    if (pr.draft) {
+      continue
+    }
+
+    const outdated = await githubApi.getSpecificCommitStatus(
+      pr.head.sha,
+      'prbot:release note labels',
+    )
+
+    log.info(
+      `PR #${pr.number} (sha: ${pr.head.sha}) "prbot:release note labels" status is ${outdated}`,
+    )
+
+    if (outdated !== 'EXPECTED' && outdated !== undefined) {
+      continue
+    }
+
+    await runReactors(reactors, {
       context: {
         githubApi,
         log,

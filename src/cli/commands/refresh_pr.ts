@@ -4,6 +4,15 @@ import { Log, GithubApi } from '../../lib'
 import { runReactors, prReactors } from '../../reactors'
 import { CliError } from '../errors'
 
+function filterReactors(filter?: string) {
+  if (!filter) {
+    return prReactors
+  }
+
+  const ids = filter.split(',').map(id => id.trim())
+  return prReactors.filter(r => ids.includes(r.id))
+}
+
 export async function runRefreshPrCommand(
   prId: string,
   reactorId: string,
@@ -23,21 +32,18 @@ export async function runRefreshPrCommand(
   }
 
   const pr = await githubApi.getPr(Number.parseInt(prId, 10))
-  await runReactors(
-    prReactors.filter(r => !reactorId || r.id === reactorId),
-    {
-      context: {
-        input: {
-          action: 'refresh',
-          pr,
-          prFromApi: true,
-        },
-        githubApi,
-        log,
-        es,
+  await runReactors(filterReactors(reactorId), {
+    context: {
+      input: {
+        action: 'refresh',
+        pr,
+        prFromApi: true,
       },
+      githubApi,
+      log,
+      es,
     },
-  )
+  })
 
   log.info('✅ success')
 }
