@@ -13,6 +13,7 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'ready_for_review',
   'reopened',
   'refresh',
+  'labeled',
 ]
 
 export const ciNotRequired = new PrReactor({
@@ -22,7 +23,11 @@ export const ciNotRequired = new PrReactor({
     pr.state === 'open' && RELEVANT_ACTIONS.includes(action),
 
   async exec({ input: { pr }, githubApi, log }) {
-    const skipsCi = SKIP_CI_RE.test(pr.title) || SKIP_CI_RE.test(pr.body)
+    const skipsCi =
+      SKIP_CI_RE.test(pr.title) ||
+      SKIP_CI_RE.test(pr.body) ||
+      pr.labels.some(l => l.name === 'skip-ci')
+
     if (!skipsCi) {
       return {
         pr: pr.number,
