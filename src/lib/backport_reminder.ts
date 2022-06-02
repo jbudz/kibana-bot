@@ -30,7 +30,8 @@ const createBackportReminderComment = (
   if (pendingPrs === 0) {
     return (
       'Friendly reminder: Looks like this PR hasn’t been backported yet.\n' +
-      `To create backports run \`node scripts/backport --pr ${prNumber}\` or prevent reminders by adding the \`backport:skip\` label.`
+      `To create automatically backports add the label \`auto-backport\` or prevent reminders by adding the \`backport:skip\` label.\n` +
+      `You can also create backports manually by running \`node scripts/backport --pr ${prNumber}\` locally`
     )
   }
 
