@@ -14,6 +14,13 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
   'ready_for_review',
 ]
 
+const DECLARATIVE_BACKPORT_LABELS = [
+  'backport:prev-minor',
+  'backport:prev-major',
+  'backport:all-open',
+  'backport:auto-version',
+]
+
 export const releaseVersionLabels = new PrReactor({
   id: 'releaseVersionLabels',
 
@@ -34,9 +41,9 @@ export const releaseVersionLabels = new PrReactor({
     }
 
     const labelNames = pr.labels.map(label => label.name)
-    const missingReleaseVersionLabel = !labelNames.some(n =>
-      RELEASE_VERSION_LABEL_RE.test(n),
-    )
+    const missingReleaseVersionLabel =
+      !labelNames.some(n => RELEASE_VERSION_LABEL_RE.test(n)) &&
+      !labelNames.some(n => DECLARATIVE_BACKPORT_LABELS.includes(n))
 
     // we must check these in exec() since they can change over time so we don't want
     // to orphan a PR that became a backport PR or was retargetted away from main
