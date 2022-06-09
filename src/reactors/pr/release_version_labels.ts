@@ -41,16 +41,18 @@ export const releaseVersionLabels = new PrReactor({
     }
 
     const labelNames = pr.labels.map(label => label.name)
-    const missingReleaseVersionLabel =
-      !labelNames.some(n => RELEASE_VERSION_LABEL_RE.test(n)) &&
-      !labelNames.some(n => DECLARATIVE_BACKPORT_LABELS.includes(n))
+    const needVersionLabel = !labelNames.some(
+      n =>
+        RELEASE_VERSION_LABEL_RE.test(n) ||
+        DECLARATIVE_BACKPORT_LABELS.includes(n),
+    )
 
     // we must check these in exec() since they can change over time so we don't want
     // to orphan a PR that became a backport PR or was retargetted away from main
     const isBasedOnReleaseBranch = RELEASE_BRANCH_RE.test(pr.base.ref)
     const isBackport = labelNames.includes('backport')
 
-    if (isBasedOnReleaseBranch && missingReleaseVersionLabel && !isBackport) {
+    if (isBasedOnReleaseBranch && needVersionLabel && !isBackport) {
       await new InvalidLabelLog(es, log).add(pr.number)
       await githubApi.setCommitStatus(pr.head.sha, {
         context: 'prbot:release version labels',
@@ -68,7 +70,7 @@ export const releaseVersionLabels = new PrReactor({
       pr: pr.number,
       prTitle: pr.title,
       labelNames,
-      missingReleaseVersionLabel,
+      needVersionLabel,
       isBasedOnReleaseBranch,
       isBackport,
     }
