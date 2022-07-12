@@ -20,6 +20,12 @@ const RELEVANT_ACTIONS: ReactorInput['action'][] = [
 
 const DISABLE_LABELS = ['backport:skip', 'backported', 'reverted']
 
+function isUsingNewBackportLabels(pr: GithubApiPr) {
+  return pr.labels.some(
+    l => l.name.startsWith('backport:') && l.name !== 'backport:auto-version',
+  )
+}
+
 async function findSourcePrState(githubApi: GithubApi, pr: GithubApiPr) {
   for (const [, numberInTitle] of [...pr.title.matchAll(/\(#(\d+)\)/g)]) {
     try {
@@ -100,20 +106,22 @@ export const backportReminder = new PrReactor({
       }
     }
 
-    const versionLabels = pr.labels.filter(l =>
-      RELEASE_VERSION_LABEL_RE.test(l.name),
-    )
-    if (
-      versionLabels.length === 1 &&
-      versionLabels[0].name === (await getLatestVersionLabel(log, githubApi))
-    ) {
-      await clearBackportReminder(es, pr.number)
-      await clearBackportMissingLabel(githubApi, pr.number)
-      await githubApi.addLabel(pr.number, 'backport:skip')
+    if (!isUsingNewBackportLabels(pr)) {
+      const versionLabels = pr.labels.filter(l =>
+        RELEASE_VERSION_LABEL_RE.test(l.name),
+      )
+      if (
+        versionLabels.length === 1 &&
+        versionLabels[0].name === (await getLatestVersionLabel(log, githubApi))
+      ) {
+        await clearBackportReminder(es, pr.number)
+        await clearBackportMissingLabel(githubApi, pr.number)
+        await githubApi.addLabel(pr.number, 'backport:skip')
 
-      return {
-        pr: pr.number,
-        reminderCleared: `pr is only backported to current main version`,
+        return {
+          pr: pr.number,
+          reminderCleared: `pr is only backported to current main version`,
+        }
       }
     }
 
