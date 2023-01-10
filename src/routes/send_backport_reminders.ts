@@ -12,7 +12,7 @@ import { Route } from '@spalger/micro-plus'
 export const sendBackportRemindersRoute = new Route(
   'GET',
   '/send_backport_reminders',
-  requireDirectApiPassword(async ctx => {
+  requireDirectApiPassword(async (ctx) => {
     const es = getEsClient(ctx)
     const log = getRequestLogger(ctx)
     const githubApi = getGithubApi(ctx)

@@ -35,7 +35,7 @@ type QueryPage = {
 }
 
 const Query = gql`
-  query($after: String) {
+  query ($after: String) {
     repository(owner: "elastic", name: "kibana") {
       pullRequests(
         first: 10
@@ -90,7 +90,7 @@ async function* ittrPrs(githubApi: GithubApi) {
       const { contexts = [] } = lastCommit.commit.status || {}
       yield {
         id: pr.number,
-        statuses: Object.fromEntries(contexts.map(c => [c.context, c.state])),
+        statuses: Object.fromEntries(contexts.map((c) => [c.context, c.state])),
       }
     }
   }

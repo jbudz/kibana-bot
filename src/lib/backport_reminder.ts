@@ -141,7 +141,7 @@ export async function maybeSendBackportReminder({
   }
 
   /** BACKPORTS EXIST AND ARE ALL MERGED */
-  if (backportPrs.length && backportPrs.every(pr => pr.state === 'MERGED')) {
+  if (backportPrs.length && backportPrs.every((pr) => pr.state === 'MERGED')) {
     await clearBackportReminder(es, prNumber)
     await clearBackportMissingLabel(githubApi, prNumber)
 

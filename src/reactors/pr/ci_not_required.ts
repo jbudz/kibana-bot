@@ -26,7 +26,7 @@ export const ciNotRequired = new PrReactor({
     const skipsCi =
       SKIP_CI_RE.test(pr.title) ||
       SKIP_CI_RE.test(pr.body) ||
-      pr.labels.some(l => l.name === 'skip-ci')
+      pr.labels.some((l) => l.name === 'skip-ci')
 
     if (!skipsCi) {
       return {
@@ -60,7 +60,7 @@ export const ciNotRequired = new PrReactor({
       skipsCi,
       isDocsOnlyChange,
       isConfigOnlyChange,
-      fileNames: files.map(f =>
+      fileNames: files.map((f) =>
         f.previous_filename
           ? `${f.previous_filename} => ${f.filename}`
           : f.filename,

@@ -4,9 +4,9 @@ import { AbortError, makeAbortable, isAbortError } from './abortable'
 
 it('aborts iterable when signal is triggered', async () => {
   const abort = new AbortController()
-  const spy = jest.fn(n => n)
+  const spy = jest.fn((n) => n)
 
-  const iter = (function*() {
+  const iter = (function* () {
     try {
       yield spy(1)
       yield spy(2)

@@ -22,7 +22,7 @@ const DISABLE_LABELS = ['backport:skip', 'backported', 'reverted']
 
 function isUsingNewBackportLabels(pr: GithubApiPr) {
   return pr.labels.some(
-    l => l.name.startsWith('backport:') && l.name !== 'backport:auto-version',
+    (l) => l.name.startsWith('backport:') && l.name !== 'backport:auto-version',
   )
 }
 
@@ -37,7 +37,7 @@ async function findSourcePrState(githubApi: GithubApi, pr: GithubApiPr) {
     } catch (error) {
       if (
         isGqlRespError(error) &&
-        error.resp.errors.some(e => e.type === 'NOT_FOUND')
+        error.resp.errors.some((e) => e.type === 'NOT_FOUND')
       ) {
         // try the next match
         continue
@@ -58,7 +58,7 @@ export const backportReminder = new PrReactor({
 
   async exec({ input: { pr }, es, log, githubApi }) {
     if (pr.base.ref !== 'main' && pr.base.ref !== 'master') {
-      if (!pr.labels.some(l => l.name === 'backport')) {
+      if (!pr.labels.some((l) => l.name === 'backport')) {
         return {
           pr: pr.number,
           notABackportPr: true,
@@ -79,7 +79,7 @@ export const backportReminder = new PrReactor({
       if (
         !backportPrs ||
         !backportPrs.length ||
-        backportPrs.some(pr => pr.state !== 'MERGED')
+        backportPrs.some((pr) => pr.state !== 'MERGED')
       ) {
         return {
           pr: pr.number,
@@ -95,7 +95,7 @@ export const backportReminder = new PrReactor({
       }
     }
 
-    const disableLabel = pr.labels.find(l => DISABLE_LABELS.includes(l.name))
+    const disableLabel = pr.labels.find((l) => DISABLE_LABELS.includes(l.name))
     if (disableLabel) {
       await clearBackportReminder(es, pr.number)
       await clearBackportMissingLabel(githubApi, pr.number)
@@ -107,7 +107,7 @@ export const backportReminder = new PrReactor({
     }
 
     if (!isUsingNewBackportLabels(pr)) {
-      const versionLabels = pr.labels.filter(l =>
+      const versionLabels = pr.labels.filter((l) =>
         RELEASE_VERSION_LABEL_RE.test(l.name),
       )
       if (

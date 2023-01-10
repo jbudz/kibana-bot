@@ -17,7 +17,7 @@ export async function* asDelayedAsyncIter<T>(
   iterInput: IterInput<T>,
 ) {
   for await (const item of asAsyncIterable(iterInput)) {
-    await new Promise(resolve => setTimeout(resolve, ms))
+    await new Promise((resolve) => setTimeout(resolve, ms))
     yield item
   }
 }

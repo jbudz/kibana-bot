@@ -5,7 +5,7 @@ import { Route, SearchParamError } from '@spalger/micro-plus'
 export const slackAuthCallbackRoute = new Route(
   'GET',
   '/slack_auth_callback',
-  async ctx => {
+  async (ctx) => {
     const slack = getSlackApi(ctx)
     const code = ctx.query['code']
 

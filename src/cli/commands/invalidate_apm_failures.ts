@@ -5,7 +5,7 @@ import { GQLStatusState } from '../../github_api_types'
 
 const filterMap = <T, T2>(arr: T[], fn: (a: T) => T2 | undefined): T2[] => {
   return Array.from(
-    (function*() {
+    (function* () {
       for (const a of arr) {
         const val = fn(a)
         if (val !== undefined) {
@@ -58,7 +58,7 @@ type QueryPage = {
 }
 
 const Query = gql`
-  query($after: String) {
+  query ($after: String) {
     repository(owner: "elastic", name: "kibana") {
       pullRequests(
         first: 10
@@ -120,21 +120,21 @@ async function* ittrFailedPrs(githubApi: GithubApi, failureContext: string) {
       cursors.push(page.pageInfo.endCursor)
     }
 
-    const pageOfFails = page.nodes.filter(n => {
+    const pageOfFails = page.nodes.filter((n) => {
       const [lastCommit] = n.lastCommit.nodes
       const { contexts = [] } = lastCommit.commit.status || {}
-      const context = contexts.find(c => c.context === failureContext)
+      const context = contexts.find((c) => c.context === failureContext)
 
       return context?.state === 'FAILURE' || context?.state === 'ERROR'
     })
 
     const extendedFilePathLists = await githubApi.getRestOfFiles(
-      filterMap(pageOfFails, pr =>
+      filterMap(pageOfFails, (pr) =>
         !pr.files.pageInfo.hasNextPage
           ? undefined
           : {
               id: pr.number,
-              files: pr.files.nodes.map(f => f.path),
+              files: pr.files.nodes.map((f) => f.path),
               filesEndCursor: pr.files.pageInfo.endCursor,
             },
       ),
@@ -142,7 +142,7 @@ async function* ittrFailedPrs(githubApi: GithubApi, failureContext: string) {
 
     for (const n of pageOfFails) {
       const filePaths =
-        extendedFilePathLists.get(n.number) || n.files.nodes.map(n => n.path)
+        extendedFilePathLists.get(n.number) || n.files.nodes.map((n) => n.path)
       yield {
         id: n.number,
         sha: n.lastCommit.nodes[0].commit.oid,

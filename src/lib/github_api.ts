@@ -27,7 +27,7 @@ import {
 const RATE_LIMIT_THROTTLE_MS = 10 * 1000
 const MAX_REQ_ATTEMPTS = 3
 const sleep = async (ms: number) =>
-  await new Promise(resolve => setTimeout(resolve, ms))
+  await new Promise((resolve) => setTimeout(resolve, ms))
 
 type COMMIT_STATUS_STATE = 'error' | 'pending' | 'success' | 'failure'
 
@@ -148,7 +148,7 @@ export class GithubApi {
     if (this.dryRun) {
       const combinedStatus = await this.getCommitStatus(ref)
       const status = combinedStatus.statuses.find(
-        s => s.context === options.context,
+        (s) => s.context === options.context,
       )
 
       this.log.info(`Dry Run: change from ${status?.state} to ${options.state}`)
@@ -182,7 +182,7 @@ export class GithubApi {
       }
     }>(
       gql`
-        query($ref: String!, $context: String!) {
+        query ($ref: String!, $context: String!) {
           repository(owner: "elastic", name: "kibana") {
             object(expression: $ref) {
               ... on Commit {
@@ -256,7 +256,7 @@ export class GithubApi {
 
     const resp = await this.gql<ResponseType>(
       gql`
-        query($query: String!) {
+        query ($query: String!) {
           search(first: 100, query: $query, type: ISSUE) {
             nodes {
               __typename
@@ -292,7 +292,7 @@ export class GithubApi {
     const prs: Array<OutdatedPr | PrWithFiles> = []
 
     for (const n of resp.search.nodes) {
-      const lastSha = n.commits.nodes.map(nn => nn.commit.oid).shift()
+      const lastSha = n.commits.nodes.map((nn) => nn.commit.oid).shift()
       if (lastSha !== commitSha) {
         prs.push({
           id: n.number,
@@ -309,13 +309,13 @@ export class GithubApi {
       })
       restOfFilesReqs.push({
         id: n.number,
-        files: n.files.nodes.map(nn => nn.path),
+        files: n.files.nodes.map((nn) => nn.path),
         filesEndCursor: n.files.pageInfo.endCursor,
       })
     }
 
     const allFiles = await this.getRestOfFiles(restOfFilesReqs)
-    return prs.map(pr => {
+    return prs.map((pr) => {
       const files = allFiles.get(pr.id)
       return files ? ({ ...pr, files } as PrWithFiles) : (pr as OutdatedPr)
     })
@@ -326,7 +326,7 @@ export class GithubApi {
     const nextReqs = reqs.slice()
 
     // map of all files for the requested pr ids
-    const allFiles = new Map(reqs.map(r => [r.id, r.files || []]))
+    const allFiles = new Map(reqs.map((r) => [r.id, r.files || []]))
 
     while (nextReqs.length) {
       const batch = nextReqs.splice(0)
@@ -383,18 +383,18 @@ export class GithubApi {
         )
       }
 
-      const args = vars.map(v => `$${v.name}: ${v.type}`)
+      const args = vars.map((v) => `$${v.name}: ${v.type}`)
       const moreFilesResp = await this.gql<RepsonseType>(
         gql`query(${args.join(',')}) {
           repository(owner: "elastic", name: "kibana") {${queries}}
         }`,
-        Object.fromEntries(vars.map(v => [v.name, v.value])),
+        Object.fromEntries(vars.map((v) => [v.name, v.value])),
       )
 
       for (const resp of Object.values(moreFilesResp.repository)) {
         allFiles.set(resp.number, [
           ...(allFiles.get(resp.number) || []),
-          ...resp.files.nodes.map(n => n.path),
+          ...resp.files.nodes.map((n) => n.path),
         ])
 
         if (resp.files.pageInfo.hasNextPage) {
@@ -579,7 +579,7 @@ export class GithubApi {
 
     const resp = await this.gql<RepsonseType>(
       gql`
-        query($prId: Int!) {
+        query ($prId: Int!) {
           repository(owner: "elastic", name: "kibana") {
             pullRequest(number: $prId) {
               mergeCommit {
@@ -639,7 +639,7 @@ export class GithubApi {
     const firstLineOfMergeCommit = getFirstLine(pr.mergeCommit.message)
     const isRefToBackportPr = (prRef: PrRef) => {
       const includesUneditedMergeCommit = prRef.commits.edges.some(
-        commit =>
+        (commit) =>
           getFirstLine(commit.node.commit.message) === firstLineOfMergeCommit,
       )
 
@@ -651,16 +651,16 @@ export class GithubApi {
     }
 
     return {
-      labels: pr.labels?.nodes?.map(n => n.name) ?? [],
+      labels: pr.labels?.nodes?.map((n) => n.name) ?? [],
       backportPrs: pr.timelineItems.edges
-        .map(edge => edge?.node?.source)
+        .map((edge) => edge?.node?.source)
         .filter((ref): ref is PrRef => ref?.__typename === 'PullRequest')
         .filter(
           (prRef): prRef is PendingOrOpenPrRef =>
             (prRef.state === 'MERGED' || prRef.state === 'OPEN') &&
             isRefToBackportPr(prRef),
         )
-        .map(prRef => ({
+        .map((prRef) => ({
           branch: prRef.baseRefName,
           state: prRef.state,
         })),
@@ -670,7 +670,7 @@ export class GithubApi {
   public async setPrLabels(prId: number, labels: string[]) {
     if (this.dryRun) {
       const pr = await this.getPr(prId)
-      const prLabels = pr.labels.map(label => label.name)
+      const prLabels = pr.labels.map((label) => label.name)
       this.log.info(`Dry Run: labels before ${prLabels}`)
       this.log.info(`Dry Run: labels after ${labels} `)
       return pr.labels
@@ -710,7 +710,7 @@ export class GithubApi {
   public async setIssueLabels(issueId: number, labels: string[]) {
     if (this.dryRun) {
       const issue = await this.getIssue(issueId)
-      const issueLabels = issue.labels.map(label => label.name)
+      const issueLabels = issue.labels.map((label) => label.name)
       this.log.info(`Dry Run: labels before ${issueLabels}`)
       this.log.info(`Dry Run: labels after ${labels} `)
       return issue.labels
@@ -839,8 +839,8 @@ export class GithubApi {
         params,
         data: body,
         headers,
-        transformResponse: alwaysResponseWithText ? [x => x] : undefined,
-        validateStatus: status => {
+        transformResponse: alwaysResponseWithText ? [(x) => x] : undefined,
+        validateStatus: (status) => {
           return (
             (status >= 200 && status < 300) ||
             (ignoredErrorStatuses
@@ -996,7 +996,7 @@ export class GithubApi {
   }
 }
 
-const githubApiCache = makeContextCache('github api', ctx => {
+const githubApiCache = makeContextCache('github api', (ctx) => {
   return new GithubApi(getRequestLogger(ctx), getConfigVar('GITHUB_SECRET'))
 })
 

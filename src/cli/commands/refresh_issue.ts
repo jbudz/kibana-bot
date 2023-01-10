@@ -24,7 +24,7 @@ export async function runRefreshIssueCommand(
 
   const issue = await githubApi.getIssue(Number.parseInt(issueId, 10))
   await runReactors(
-    issueReactors.filter(r => !reactorId || r.id === reactorId),
+    issueReactors.filter((r) => !reactorId || r.id === reactorId),
     {
       context: {
         input: {

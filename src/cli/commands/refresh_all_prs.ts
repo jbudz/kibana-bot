@@ -13,8 +13,8 @@ export async function runRefreshAllPrsCommand(
     throw new CliError('reactor id must be specified')
   }
 
-  const ids = reactorId.split(',').map(id => id.trim())
-  const reactors = prReactors.filter(r => ids.includes(r.id))
+  const ids = reactorId.split(',').map((id) => id.trim())
+  const reactors = prReactors.filter((r) => ids.includes(r.id))
   if (!reactors.length) {
     throw new CliError('reactor id does not match any known reactors')
   }

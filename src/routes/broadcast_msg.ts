@@ -4,7 +4,7 @@ import { Route, SearchParamError } from '@spalger/micro-plus'
 export const broadcastMsgRoute = new Route(
   'GET',
   '/broadcast_msg',
-  requireDirectApiPassword(async ctx => {
+  requireDirectApiPassword(async (ctx) => {
     const slack = getSlackApi(ctx)
 
     const msg = ctx.query.message

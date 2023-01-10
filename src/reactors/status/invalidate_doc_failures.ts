@@ -10,7 +10,7 @@ export const invalidateDocFailures = new Reactor<GithubWebhookCommitStatus>({
   filter: ({ input }) =>
     input.context === ES_DOCS_CONTEXT &&
     input.state === 'failure' &&
-    !input.branches.some(b => RELEASE_BRANCH_RE.test(b.name)),
+    !input.branches.some((b) => RELEASE_BRANCH_RE.test(b.name)),
 
   async exec({ input, githubApi, log }) {
     const { sha } = input.commit

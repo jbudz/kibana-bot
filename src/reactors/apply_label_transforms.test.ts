@@ -53,7 +53,7 @@ it('calls the transform functions in order', () => {
 })
 
 it('returns the new label list if label was added', () => {
-  expect(applyLabelTransforms(['foo', 'bar'], [l => [...l, 'baz']]))
+  expect(applyLabelTransforms(['foo', 'bar'], [(l) => [...l, 'baz']]))
     .toMatchInlineSnapshot(`
     Object {
       "added": Array [
@@ -73,7 +73,7 @@ it('returns the new label list if a label was removed', () => {
   expect(
     applyLabelTransforms(
       ['foo', 'bar', 'box'],
-      [labels => labels.filter(l => l.startsWith('b'))],
+      [(labels) => labels.filter((l) => l.startsWith('b'))],
     ),
   ).toMatchInlineSnapshot(`
     Object {
@@ -94,8 +94,8 @@ it('returns the new label list if a label was added and a label was removed', ()
     applyLabelTransforms(
       ['foo', 'bar', 'box'],
       [
-        labels => labels.filter(l => l.startsWith('b')),
-        labels => [...labels, 'zip'],
+        (labels) => labels.filter((l) => l.startsWith('b')),
+        (labels) => [...labels, 'zip'],
       ],
     ),
   ).toMatchInlineSnapshot(`
@@ -117,6 +117,6 @@ it('returns the new label list if a label was added and a label was removed', ()
 
 it('returns null if the labels are unchanged', () => {
   expect(
-    applyLabelTransforms(['foo', 'bar'], [labels => [...labels]]),
+    applyLabelTransforms(['foo', 'bar'], [(labels) => [...labels]]),
   ).toMatchInlineSnapshot(`null`)
 })

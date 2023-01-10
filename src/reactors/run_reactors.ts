@@ -25,7 +25,7 @@ export async function runReactors<E>(
     })
 
     promises.push(
-      reactor.exec(context).then(result => {
+      reactor.exec(context).then((result) => {
         combinedResult[reactor.id] = {
           skipped: false,
           result,

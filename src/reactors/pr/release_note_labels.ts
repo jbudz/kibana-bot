@@ -29,8 +29,8 @@ export const releaseNoteLabels = new PrReactor({
       }
     }
 
-    const labelNames = pr.labels.map(label => label.name)
-    const missingReleaseNotesLabel = !labelNames.some(n =>
+    const labelNames = pr.labels.map((label) => label.name)
+    const missingReleaseNotesLabel = !labelNames.some((n) =>
       n.startsWith('release_note:'),
     )
 

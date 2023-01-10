@@ -5,7 +5,7 @@ import { applyOutdatedResult, scrollSearch } from '../lib'
 export const refreshExpiredOutdatedRoute = new Route(
   'GET',
   '/refresh_expired_outdated',
-  requireDirectApiPassword(async ctx => {
+  requireDirectApiPassword(async (ctx) => {
     const es = getEsClient(ctx)
     const githubApi = getGithubApi(ctx)
 

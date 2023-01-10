@@ -65,7 +65,7 @@ export async function map<T, T2>(
     let iCounter = 0
     for await (const item of makeAbortable(iterInput, abort.signal)) {
       if (activeCount === concurrency) {
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
           onNextComplete = resolve
         })
       }

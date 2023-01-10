@@ -11,7 +11,7 @@ const chalk = require('chalk')
 
 require('./src/cli')
   .main()
-  .catch(error => {
+  .catch((error) => {
     console.error(chalk.red('FATAL ERROR'))
     console.error(error)
     process.exit(1)

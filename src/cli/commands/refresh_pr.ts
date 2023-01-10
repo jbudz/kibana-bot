@@ -9,8 +9,8 @@ function filterReactors(filter?: string) {
     return prReactors
   }
 
-  const ids = filter.split(',').map(id => id.trim())
-  return prReactors.filter(r => ids.includes(r.id))
+  const ids = filter.split(',').map((id) => id.trim())
+  return prReactors.filter((r) => ids.includes(r.id))
 }
 
 export async function runRefreshPrCommand(

@@ -34,7 +34,7 @@ export const addLabelReactor = new PrReactor({
   async exec({ input: { pr, action }, githubApi, log }) {
     log.info(`pr #${pr.number} [action=${action}]`, { action })
 
-    const existingLabels = pr.labels.map(label => label.name)
+    const existingLabels = pr.labels.map((label) => label.name)
     const transformedLabels = applyLabelTransforms(
       existingLabels,
       labelTransforms,

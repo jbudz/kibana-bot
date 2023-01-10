@@ -7,7 +7,7 @@ import {
 const PASSWORD = getConfigVar('DIRECT_API_PASSWORD')
 
 export function requireDirectApiPassword(handler: RouteHandler): RouteHandler {
-  return async ctx => {
+  return async (ctx) => {
     const [type = '', base64 = ''] = (ctx.header('authorization') || '')
       .trim()
       .split(' ')

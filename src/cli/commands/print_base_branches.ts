@@ -22,7 +22,7 @@ type QueryPage = {
 }
 
 const Query = gql`
-  query($after: String) {
+  query ($after: String) {
     repository(owner: "elastic", name: "kibana") {
       pullRequests(
         first: 10

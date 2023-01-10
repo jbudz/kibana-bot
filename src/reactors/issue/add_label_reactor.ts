@@ -28,7 +28,7 @@ export const addLabelReactor = new IssueReactor({
   async exec({ input: { issue, action }, log, githubApi }) {
     log.info(`issue #${issue.number} [action=${action}]`, { action })
 
-    const existingLabels = issue.labels.map(label => label.name)
+    const existingLabels = issue.labels.map((label) => label.name)
     const transformedLabels = applyLabelTransforms(
       existingLabels,
       labelTransforms,

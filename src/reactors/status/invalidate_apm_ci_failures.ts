@@ -10,7 +10,7 @@ export const invalidateApmCiFailures = new Reactor<GithubWebhookCommitStatus>({
   filter: ({ input }) =>
     input.context === APM_CI_CONTEXT &&
     (input.state === 'failure' || input.state === 'error') &&
-    !input.branches.some(b => RELEASE_BRANCH_RE.test(b.name)),
+    !input.branches.some((b) => RELEASE_BRANCH_RE.test(b.name)),
 
   async exec({ input, githubApi, log }) {
     const { sha } = input.commit

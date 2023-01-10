@@ -9,7 +9,7 @@ export async function runRefreshAllLabelsCommand(
   githubApi: GithubApi,
   reactorId?: string,
 ) {
-  const reactors = labelReactors.filter(reactor =>
+  const reactors = labelReactors.filter((reactor) =>
     reactorId ? reactor.id === reactorId : true,
   )
   if (!reactors.length) {

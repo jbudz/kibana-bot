@@ -41,7 +41,7 @@ export const badCommits = new PrReactor({
       }
     }
 
-    const brokeZones = PR_BROKE_ZONES.filter(z =>
+    const brokeZones = PR_BROKE_ZONES.filter((z) =>
       z.branches.includes(pr.base.ref),
     )
 

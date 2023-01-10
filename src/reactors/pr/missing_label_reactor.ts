@@ -34,7 +34,7 @@ export const missingLabelReactor = new PrReactor({
   async exec({ input: { pr, action }, githubApi, es, log }) {
     log.info(`pr #${pr.number} [action=${action}]`, { action })
 
-    const existingLabels = pr.labels.map(label => label.name)
+    const existingLabels = pr.labels.map((label) => label.name)
     const transformedLabels = applyLabelTransforms(
       existingLabels,
       labelTransforms,
@@ -68,7 +68,7 @@ export const missingLabelReactor = new PrReactor({
     } else {
       const combinedStatus = await githubApi.getCommitStatus(pr.head.sha)
       const status = combinedStatus.statuses.find(
-        s => s.context === 'prbot:required labels',
+        (s) => s.context === 'prbot:required labels',
       )
 
       if (status && status.state !== 'success') {

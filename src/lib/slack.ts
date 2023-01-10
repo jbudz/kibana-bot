@@ -326,7 +326,7 @@ export const createSlackApi = (log: Log, client: Client) =>
     credsPassword: JSON.parse(getConfigVar('SLACK_CREDS_PASSWORD')),
   })
 
-const slackApiCache = makeContextCache('github api', ctx =>
+const slackApiCache = makeContextCache('github api', (ctx) =>
   createSlackApi(getRequestLogger(ctx), getEsClient(ctx)),
 )
 

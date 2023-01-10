@@ -27,7 +27,7 @@ export class InvalidLabelLog {
     })
 
     // called after each item is handled so it can be deleted
-    const handled = async (hit: EsHit<{}>) => {
+    const handled = async (hit: EsHit<unknown>) => {
       this.log.info(
         `handled and clearing "invalid label log" item [id=${hit._id}]`,
       )
@@ -43,7 +43,7 @@ export class InvalidLabelLog {
     }
 
     // iterate over all items in the index
-    const hitIter = scrollSearch<EsHit<{}>>(this.es, {
+    const hitIter = scrollSearch<EsHit<unknown>>(this.es, {
       index: 'kibana-bot-invalid-labels-log',
       body: {},
     })

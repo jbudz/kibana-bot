@@ -1,6 +1,6 @@
 import { map } from './map'
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 describe('option validation', () => {
   it('throws when limit < 0', async () => {
@@ -82,8 +82,9 @@ describe('concurrency=1, limit=3', () => {
       const prev = results[i - 1]
       if (date < prev.date + n - 1) {
         throw new Error(
-          `expected date ${i} to be at least ${n} milliseconds more than ${i -
-            1} date: ${JSON.stringify(results)}`,
+          `expected date ${i} to be at least ${n} milliseconds more than ${
+            i - 1
+          } date: ${JSON.stringify(results)}`,
         )
       }
     }

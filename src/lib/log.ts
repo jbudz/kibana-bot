@@ -83,7 +83,7 @@ export function createRootLog(es: Client | null): Log {
 const rootLoggerCache = makeContextCache<Log>('root logger')
 export const assignRootLogger = rootLoggerCache.assignValue
 
-const reqLoggerCache = makeContextCache('logger', ctx =>
+const reqLoggerCache = makeContextCache('logger', (ctx) =>
   rootLoggerCache.get(ctx).child({
     requestId: getRequestId(ctx),
   }),

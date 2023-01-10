@@ -8,7 +8,7 @@ import { IterInput } from './convert'
  * @param limit Maximum number of items to collect
  */
 export async function collect<T>(iterInput: IterInput<T>, limit = Infinity) {
-  return await map(iterInput, i => i, {
+  return await map(iterInput, (i) => i, {
     limit,
   })
 }

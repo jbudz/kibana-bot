@@ -9,7 +9,7 @@ export async function runRefreshAllIssuesCommand(
   es: Elasticsearch.Client,
   githubApi: GithubApi,
 ) {
-  const reactor = issueReactors.find(reactor => reactor.id === reactorId)
+  const reactor = issueReactors.find((reactor) => reactor.id === reactorId)
   if (!reactor) {
     throw new CliError('reactor id does not match any known reactors')
   }

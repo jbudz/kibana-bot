@@ -27,7 +27,7 @@ const queues = new Map<string, Array<() => void>>()
 const lastPrHookTimes = new LRUMap<number, number>(1000)
 const SECOND = 1000
 
-export const webhookRoute = new Route('POST', '/webhook', async ctx => {
+export const webhookRoute = new Route('POST', '/webhook', async (ctx) => {
   const log = getRequestLogger(ctx)
   const githubApi = getGithubApi(ctx)
 
@@ -52,7 +52,7 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
   let run: (x: void) => void = () => {
     // noop
   }
-  const pause = new Promise(resolve => {
+  const pause = new Promise((resolve) => {
     run = resolve
   })
 
