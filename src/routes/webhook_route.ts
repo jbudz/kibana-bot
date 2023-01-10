@@ -49,7 +49,7 @@ export const webhookRoute = new Route('POST', '/webhook', async ctx => {
     queues.set(event, [])
   }
 
-  let run = () => {
+  let run: (x: void) => void = () => {
     // noop
   }
   const pause = new Promise(resolve => {

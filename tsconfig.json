@@ -9,7 +9,8 @@
     ],
     "module": "commonjs",
     "target": "esnext",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "useUnknownInCatchVariables": false
   },
   "include": [
     "src/**/*"

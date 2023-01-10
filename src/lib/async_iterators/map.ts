@@ -43,7 +43,7 @@ export async function map<T, T2>(
     return []
   }
 
-  let onNextComplete: (() => void) | undefined
+  let onNextComplete: ((x: void) => void) | undefined
   let activeCount = 0
   const abort = new AbortController()
   const promises: Array<Promise<T2> | T2> = []
