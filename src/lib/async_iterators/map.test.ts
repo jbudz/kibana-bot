@@ -58,16 +58,16 @@ describe('concurrency=1, limit=3', () => {
 
     expect(results).toHaveLength(3)
     expect(transform.mock.calls).toMatchInlineSnapshot(`
-      Array [
-        Array [
+      [
+        [
           10,
           0,
         ],
-        Array [
+        [
           20,
           1,
         ],
-        Array [
+        [
           30,
           2,
         ],
@@ -100,23 +100,23 @@ describe('limit=3', () => {
     })
 
     expect(transform.mock.calls).toMatchInlineSnapshot(`
-      Array [
-        Array [
+      [
+        [
           10,
           0,
         ],
-        Array [
+        [
           20,
           1,
         ],
-        Array [
+        [
           30,
           2,
         ],
       ]
     `)
     expect(results).toMatchInlineSnapshot(`
-      Array [
+      [
         10,
         21,
         32,

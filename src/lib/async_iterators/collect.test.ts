@@ -7,13 +7,13 @@ const map = jest.spyOn(Map, 'map')
 it('returns an array containing all values produced from async iterable', async () => {
   await expect(collect(asDelayedAsyncIter(0, [1, 2, 3, 4]))).resolves
     .toMatchInlineSnapshot(`
-          Array [
-            1,
-            2,
-            3,
-            4,
-          ]
-        `)
+    [
+      1,
+      2,
+      3,
+      4,
+    ]
+  `)
 })
 
 it('passes input and limit to map() and returns result', async () => {
@@ -23,11 +23,11 @@ it('passes input and limit to map() and returns result', async () => {
   const limit = 123
 
   await expect(collect(input, limit)).resolves.toMatchInlineSnapshot(`
-                Array [
-                  "foo",
-                  "bar",
-                ]
-            `)
+    [
+      "foo",
+      "bar",
+    ]
+  `)
 
   expect(map).toHaveBeenCalledWith(input, expect.any(Function), { limit })
 })

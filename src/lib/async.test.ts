@@ -86,20 +86,20 @@ describe('settle()', () => {
     await expect(
       settle([Promise.resolve(1), Promise.resolve(2), Promise.reject(3)]),
     ).resolves.toMatchInlineSnapshot(`
-            Array [
-              ResolvedResult {
-                "status": "fulfilled",
-                "value": 1,
-              },
-              ResolvedResult {
-                "status": "fulfilled",
-                "value": 2,
-              },
-              RejectedResult {
-                "reason": [Error: 3 thrown],
-                "status": "rejected",
-              },
-            ]
-          `)
+      [
+        ResolvedResult {
+          "status": "fulfilled",
+          "value": 1,
+        },
+        ResolvedResult {
+          "status": "fulfilled",
+          "value": 2,
+        },
+        RejectedResult {
+          "reason": [Error: 3 thrown],
+          "status": "rejected",
+        },
+      ]
+    `)
   })
 })

@@ -9,20 +9,20 @@ it('calls the transform functions in order', () => {
   applyLabelTransforms(['foo', 'bar'], transforms)
 
   expect(transforms).toMatchInlineSnapshot(`
-    Array [
+    [
       [MockFunction] {
-        "calls": Array [
-          Array [
-            Array [
+        "calls": [
+          [
+            [
               "foo",
               "bar",
             ],
           ],
         ],
-        "results": Array [
-          Object {
+        "results": [
+          {
             "type": "return",
-            "value": Array [
+            "value": [
               "bar",
               "baz",
             ],
@@ -30,18 +30,18 @@ it('calls the transform functions in order', () => {
         ],
       },
       [MockFunction] {
-        "calls": Array [
-          Array [
-            Array [
+        "calls": [
+          [
+            [
               "bar",
               "baz",
             ],
           ],
         ],
-        "results": Array [
-          Object {
+        "results": [
+          {
             "type": "return",
-            "value": Array [
+            "value": [
               "box",
               "bot",
             ],
@@ -55,16 +55,16 @@ it('calls the transform functions in order', () => {
 it('returns the new label list if label was added', () => {
   expect(applyLabelTransforms(['foo', 'bar'], [(l) => [...l, 'baz']]))
     .toMatchInlineSnapshot(`
-    Object {
-      "added": Array [
+    {
+      "added": [
         "baz",
       ],
-      "labels": Array [
+      "labels": [
         "foo",
         "bar",
         "baz",
       ],
-      "removed": Array [],
+      "removed": [],
     }
   `)
 })
@@ -76,13 +76,13 @@ it('returns the new label list if a label was removed', () => {
       [(labels) => labels.filter((l) => l.startsWith('b'))],
     ),
   ).toMatchInlineSnapshot(`
-    Object {
-      "added": Array [],
-      "labels": Array [
+    {
+      "added": [],
+      "labels": [
         "bar",
         "box",
       ],
-      "removed": Array [
+      "removed": [
         "foo",
       ],
     }
@@ -99,16 +99,16 @@ it('returns the new label list if a label was added and a label was removed', ()
       ],
     ),
   ).toMatchInlineSnapshot(`
-    Object {
-      "added": Array [
+    {
+      "added": [
         "zip",
       ],
-      "labels": Array [
+      "labels": [
         "bar",
         "box",
         "zip",
       ],
-      "removed": Array [
+      "removed": [
         "foo",
       ],
     }

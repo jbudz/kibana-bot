@@ -7,19 +7,19 @@ it('resolves to a list of records based on promise success, in the right order',
       return x
     }),
   ).resolves.toMatchInlineSnapshot(`
-          Array [
-            ResolvedResult {
-              "status": "fulfilled",
-              "value": 1,
-            },
-            ResolvedResult {
-              "status": "fulfilled",
-              "value": 100,
-            },
-            ResolvedResult {
-              "status": "fulfilled",
-              "value": 2,
-            },
-          ]
-        `)
+    [
+      ResolvedResult {
+        "status": "fulfilled",
+        "value": 1,
+      },
+      ResolvedResult {
+        "status": "fulfilled",
+        "value": 100,
+      },
+      ResolvedResult {
+        "status": "fulfilled",
+        "value": 2,
+      },
+    ]
+  `)
 })

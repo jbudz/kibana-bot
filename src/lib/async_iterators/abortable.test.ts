@@ -34,14 +34,14 @@ it('aborts iterable when signal is triggered', async () => {
 
   expect(spy).toHaveBeenCalledTimes(3)
   expect(spy.mock.calls).toMatchInlineSnapshot(`
-    Array [
-      Array [
+    [
+      [
         1,
       ],
-      Array [
+      [
         2,
       ],
-      Array [
+      [
         "finally",
       ],
     ]

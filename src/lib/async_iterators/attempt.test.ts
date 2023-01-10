@@ -6,13 +6,13 @@ it('returns FailedResults, calls transform for each input', async () => {
   )
 
   await expect(attempt([1, 2, 3], mock)).resolves.toMatchInlineSnapshot(`
-          Array [
-            RejectedResult {
-              "reason": [Error: 2 thrown],
-              "status": "rejected",
-            },
-          ]
-        `)
+    [
+      RejectedResult {
+        "reason": [Error: 2 thrown],
+        "status": "rejected",
+      },
+    ]
+  `)
 
   expect(mock).toHaveBeenCalledTimes(3)
 })
